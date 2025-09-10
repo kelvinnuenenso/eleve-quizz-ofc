@@ -34,7 +34,8 @@ import { HeatmapAnalytics } from '@/components/analytics/HeatmapAnalytics';
 import { ABTestingManager } from '@/components/analytics/ABTestingManager';
 import { CohortAnalysis } from '@/components/analytics/CohortAnalysis';
 import { AchievementSystem } from '@/components/gamification/AchievementSystem';
-import { LeadsManager } from '@/components/quiz/LeadsManager';
+import LeadsManager from '@/components/quiz/LeadsManager';
+import { WebhookManager } from '@/components/integrations/WebhookManager';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -272,10 +273,11 @@ const Dashboard = () => {
 
         {/* Main Dashboard Content */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="leads">Leads</TabsTrigger>
+            <TabsTrigger value="integrations">Integrações</TabsTrigger>
             <TabsTrigger value="gamification">Gamificação</TabsTrigger>
             <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
           </TabsList>
@@ -410,6 +412,12 @@ const Dashboard = () => {
 
           <TabsContent value="leads" className="space-y-6">
             <LeadsManager quizId={quizzes[0]?.id || 'demo'} />
+          </TabsContent>
+
+          <TabsContent value="integrations" className="space-y-6">
+            <WebhookManager 
+              quizId={quizzes[0]?.id || 'demo'}
+            />
           </TabsContent>
 
           <TabsContent value="gamification" className="space-y-6">

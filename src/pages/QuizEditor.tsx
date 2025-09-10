@@ -21,6 +21,8 @@ import { StageEditor } from '@/components/quiz/StageEditor';
 import { PixelsManager, PixelSettings } from '@/components/quiz/PixelsManager';
 import { EngagementManager } from '@/components/quiz/engagement/EngagementManager';
 import { DemoUserManager } from '@/lib/demoUser';
+import { WebhookManager } from '@/components/integrations/WebhookManager';
+import { SEOManager } from '@/components/SEOManager';
 import { PlanBadge } from '@/components/PlanBadge';
 import {
   Plus, Save, Eye, Copy, ArrowLeft, ExternalLink, Settings, BarChart3, Palette, Trophy, Trash2, Play, Zap, Target, Crown, Check, X, Clock, Loader2
@@ -64,7 +66,7 @@ const QuizEditor = () => {
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'stages' | 'questions' | 'outcomes' | 'theme' | 'settings' | 'pixels' | 'analytics' | 'engagement'>('stages');
+  const [activeTab, setActiveTab] = useState<'stages' | 'questions' | 'outcomes' | 'theme' | 'settings' | 'pixels' | 'analytics' | 'engagement' | 'seo' | 'integrations'>('stages');
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -387,7 +389,7 @@ const QuizEditor = () => {
           {/* Tabs */}
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className={isMobile ? 'mt-2' : 'mt-4'}>
             <div className={isMobile ? 'overflow-x-auto' : ''}>
-              <TabsList className={`grid w-full grid-cols-8 ${isMobile ? 'min-w-max' : 'max-w-6xl'}`}>
+              <TabsList className={`grid w-full grid-cols-10 ${isMobile ? 'min-w-max' : 'max-w-6xl'}`}>
                 <TabsTrigger value="stages" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'}`}>
                   <Play className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                   {!isMobile && 'Editor'}
