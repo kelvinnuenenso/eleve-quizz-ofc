@@ -16,6 +16,7 @@ import { QuestionEditor } from '@/components/quiz/QuestionEditor';
 import { ThemeEditor } from '@/components/quiz/ThemeEditor';
 import { OutcomeEditor } from '@/components/quiz/OutcomeEditor';
 import { AnalyticsDashboard } from '@/components/quiz/AnalyticsDashboard';
+import { EnhancedAnalytics } from '@/components/quiz/EnhancedAnalytics';
 import { VisualQuizEditor } from '@/components/quiz/visual-editor/VisualQuizEditor';
 import { StageEditor } from '@/components/quiz/StageEditor';
 import { PixelsManager, PixelSettings } from '@/components/quiz/PixelsManager';
@@ -495,6 +496,7 @@ const QuizEditor = () => {
                 <div className="max-w-4xl mx-auto">
                   <ThemeEditor
                     theme={quiz.theme || { primary: '#2563EB', background: '#FFFFFF', text: '#0B0B0B' }}
+                    quizId={quiz.id}
                     onUpdate={(theme) => {
                       // Atualizar quiz com novo tema
                       const updatedQuiz = { ...quiz, theme };
@@ -732,7 +734,10 @@ const QuizEditor = () => {
               </TabsContent>
 
               <TabsContent value="analytics" className="mt-0">
-                <AnalyticsDashboard quizId={quiz.id} />
+                <div className="space-y-6">
+                  <AnalyticsDashboard quizId={quiz.id} />
+                  <EnhancedAnalytics quizId={quiz.id} />
+                </div>
               </TabsContent>
 
               <TabsContent value="engagement" className="mt-0">

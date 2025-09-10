@@ -11,16 +11,18 @@ import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Slider } from '@/components/ui/slider';
 import { QuizTheme } from '@/types/quiz';
-import { Palette, Type, Layout, Image, Sparkles, Zap, Film, BarChart3, Save } from 'lucide-react';
+import { Palette, Type, Layout, Image, Sparkles, Zap, Film, BarChart3, Save, Gift } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { FakeProgressBar } from './FakeProgressBar';
 import { LivePreview } from './LivePreview';
 import { IntelligentProgressConfigComponent } from './IntelligentProgressConfig';
 import { useFakeProgress } from '@/hooks/useFakeProgress';
+import { MicroRewards } from './engagement/MicroRewards';
 
 interface ThemeEditorProps {
   theme: QuizTheme;
   onUpdate: (theme: QuizTheme) => void;
+  quizId?: string;
 }
 
 const presetThemes: Array<{
@@ -444,7 +446,7 @@ const presetThemes: Array<{
   }
 ];
 
-export function ThemeEditor({ theme, onUpdate }: ThemeEditorProps) {
+export function ThemeEditor({ theme, onUpdate, quizId }: ThemeEditorProps) {
   const [activeColorPicker, setActiveColorPicker] = useState<string | null>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [themeName, setThemeName] = useState('');
@@ -550,7 +552,7 @@ export function ThemeEditor({ theme, onUpdate }: ThemeEditorProps) {
         {/* Configurações */}
         <div>
           <Tabs defaultValue="presets" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-1">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-1">
           <TabsTrigger value="presets" className="flex items-center gap-1 text-xs sm:text-sm">
             <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Presets</span>
@@ -574,6 +576,10 @@ export function ThemeEditor({ theme, onUpdate }: ThemeEditorProps) {
           <TabsTrigger value="effects" className="flex items-center gap-1 text-xs sm:text-sm">
             <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Efeitos</span>
+          </TabsTrigger>
+          <TabsTrigger value="rewards" className="flex items-center gap-1 text-xs sm:text-sm">
+            <Gift className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Recompensas</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1000,6 +1006,14 @@ export function ThemeEditor({ theme, onUpdate }: ThemeEditorProps) {
               <Label htmlFor="useSoundEffects">Efeitos sonoros</Label>
             </div>
           </div>
+        </TabsContent>
+
+        <TabsContent value="rewards" className="space-y-4">
+          <MicroRewards 
+            theme={theme}
+            onUpdate={onUpdate}
+            quizId={quizId || 'default'}
+          />
         </TabsContent>
           </Tabs>
         </div>
