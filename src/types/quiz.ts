@@ -552,6 +552,16 @@ export interface CustomDomainSettings {
   errorMessage?: string;
 }
 
+export interface QuizSEO {
+  title?: string;
+  description?: string;
+  keywords?: string[];
+  slug?: string;
+  ogImage?: string;
+  canonical?: string;
+  noindex?: boolean;
+}
+
 export interface Quiz {
   id: string;
   publicId: string;
@@ -568,6 +578,7 @@ export interface Quiz {
   pixelSettings?: QuizPixelSettings; // Configurações de pixels
   customDomain?: CustomDomainSettings; // Configurações de domínio personalizado
   redirectSettings?: QuizRedirectSettings; // Configurações de redirecionamento
+  seo?: QuizSEO; // Configurações de SEO
   createdAt: string;
   updatedAt: string;
 }

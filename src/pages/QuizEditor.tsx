@@ -418,10 +418,18 @@ const QuizEditor = () => {
                   <BarChart3 className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                   {!isMobile && 'Analytics'}
                 </TabsTrigger>
-                <TabsTrigger value="engagement" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'}`}>
-                  <Target className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
-                  {!isMobile && 'Engajamento'}
-                </TabsTrigger>
+                 <TabsTrigger value="engagement" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'}`}>
+                   <Target className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                   {!isMobile && 'Engajamento'}
+                 </TabsTrigger>
+                 <TabsTrigger value="seo" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'}`}>
+                   <BarChart3 className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                   {!isMobile && 'SEO'}
+                 </TabsTrigger>
+                 <TabsTrigger value="integrations" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'}`}>
+                   <Zap className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                   {!isMobile && 'Webhooks'}
+                 </TabsTrigger>
               </TabsList>
             </div>
 
@@ -732,6 +740,28 @@ const QuizEditor = () => {
                   <EngagementManager 
                     theme={quiz.theme || { primary: '#2563EB', background: '#FFFFFF', text: '#0B0B0B' }}
                     onUpdate={(theme) => setQuiz({ ...quiz, theme })}
+                    quizId={quiz.id}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="seo" className="mt-0">
+                <div className="max-w-4xl mx-auto">
+                  <SEOManager 
+                    quiz={quiz}
+                    onUpdate={(seoUpdates) => {
+                      setQuiz({ 
+                        ...quiz, 
+                        seo: { ...quiz.seo, ...seoUpdates }
+                      });
+                    }}
+                  />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="integrations" className="mt-0">
+                <div className="max-w-4xl mx-auto">
+                  <WebhookManager 
                     quizId={quiz.id}
                   />
                 </div>
