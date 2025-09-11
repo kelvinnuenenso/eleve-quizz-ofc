@@ -9,15 +9,20 @@ import { Quiz, QuizAnswer, Result, Lead } from '@/types/quiz';
 import { loadQuizByPublicId, saveResult, saveLead } from '@/lib/quizzes';
 import { FakeProgressBar } from '@/components/quiz/FakeProgressBar';
 import { Star, ArrowRight, Trophy, Zap, Target } from 'lucide-react';
-import { SEOHead } from '@/components/SEOHead';
-import { useSEO } from '@/hooks/useSEO';
 import { EnhancedErrorBoundary } from '@/components/EnhancedErrorBoundary';
 import { AchievementSystem } from '@/components/gamification/AchievementSystem';
+import { MobileLoadingSpinner } from '@/components/MobileLoadingSpinner';
+import { MobileSplashScreen } from '@/components/MobileSplashScreen';
+import { MobileQuizNavigation } from '@/components/MobileQuizNavigation';
+import { MobileGestureHint } from '@/components/MobileGestureHint';
+import { useMobileGestures } from '@/hooks/useMobileGestures';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const QuizRunner = () => {
   const { publicId } = useParams<{ publicId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<QuizAnswer[]>([]);
@@ -29,12 +34,26 @@ const QuizRunner = () => {
   const [answeredStepsCount, setAnsweredStepsCount] = useState(0);
   const [achievements, setAchievements] = useState<any[]>([]);
   const [showAchievement, setShowAchievement] = useState<any>(null);
+  const [showSplash, setShowSplash] = useState(isMobile);
+  const [dataReady, setDataReady] = useState(false);
+  const [showGestureHint, setShowGestureHint] = useState(isMobile && !localStorage.getItem('gesture-hint-shown'));
 
-  // Enhanced SEO
-  const { generateSharingURL } = useSEO(quiz || undefined, {
-    title: quiz ? `${quiz.name} - Quiz Interativo` : undefined,
-    description: quiz?.description || 'Responda este quiz interativo e descubra resultados personalizados',
-    type: 'quiz'
+
+  // Mobile gestures for navigation
+  const gesturesRef = useMobileGestures({
+    onSwipeLeft: () => {
+      // Next question on swipe left
+      if (currentStep < (quiz?.questions?.length || 0) - 1) {
+        setCurrentStep(currentStep + 1);
+      }
+    },
+    onSwipeRight: () => {
+      // Previous question on swipe right
+      if (currentStep > 0) {
+        setCurrentStep(currentStep - 1);
+      }
+    },
+    enableTouch: isMobile && quiz?.questions && quiz.questions.length > 1
   });
 
   // Reset selected options when step changes
@@ -55,24 +74,49 @@ const QuizRunner = () => {
         setQuiz(loadedQuiz);
         // Initialize step start time when quiz loads
         setStepStartTime(Date.now());
+        
+        // For mobile, show splash screen before marking as ready
+        if (isMobile) {
+          setTimeout(() => setDataReady(true), 100);
+        } else {
+          setDataReady(true);
+        }
       } catch (error) {
         console.error('Error loading quiz:', error);
+        setDataReady(true);
       } finally {
-        setLoading(false);
+        if (!isMobile) {
+          setLoading(false);
+        }
       }
     };
 
     loadQuiz();
   }, [publicId]);
 
-  if (loading) {
+  // Mobile splash screen completion
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+    setLoading(false);
+  };
+
+  // Show splash screen for mobile
+  if (isMobile && showSplash && dataReady) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando quiz...</p>
-        </div>
-      </div>
+      <MobileSplashScreen 
+        onComplete={handleSplashComplete}
+        quizName={quiz?.name}
+        duration={2000}
+      />
+    );
+  }
+
+  if (loading || !dataReady) {
+    return (
+      <MobileLoadingSpinner 
+        message="Carregando quiz..." 
+        fullScreen={true}
+      />
     );
   }
 
@@ -325,9 +369,11 @@ const QuizRunner = () => {
             <Input
               name="phone"
               type="tel"
+              inputMode="tel"
               placeholder={currentQuestion.settings?.placeholder || "(11) 99999-9999"}
               required={currentQuestion.required}
               className="text-center text-lg py-3"
+              autoComplete="tel"
             />
             <Button 
               type="submit" 
@@ -433,9 +479,11 @@ const QuizRunner = () => {
             <Input
               name="email"
               type="email"
+              inputMode="email"
               placeholder={currentQuestion.settings?.placeholder || "seu@email.com"}
               required={currentQuestion.required}
               className="text-center text-lg py-3"
+              autoComplete="email"
             />
             <Button 
               type="submit" 
@@ -540,12 +588,8 @@ const QuizRunner = () => {
       maxRetries={3}
       showErrorDetails={process.env.NODE_ENV === 'development'}
     >
-      <SEOHead 
-        quiz={quiz || undefined}
-        type="quiz"
-        url={window.location.href}
-      />
     <div 
+      ref={gesturesRef}
       className="min-h-screen"
       style={{ 
         backgroundColor: quiz.theme?.background || '#F8FAFC',
@@ -643,6 +687,40 @@ const QuizRunner = () => {
           </Card>
         </div>
       </div>
+
+      {/* Mobile Navigation - Only show on mobile and if there are multiple questions */}
+      {isMobile && quiz?.questions && quiz.questions.length > 1 && (
+        <MobileQuizNavigation
+          currentStep={currentStep}
+          totalSteps={quiz.questions.length}
+          progress={progress}
+          canGoBack={currentStep > 0}
+          canGoNext={currentStep < quiz.questions.length - 1}
+          onBack={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+          onNext={() => setCurrentStep(prev => Math.min(quiz.questions.length - 1, prev + 1))}
+          onHome={() => window.location.href = '/'}
+          showProgress={quiz.theme?.showProgress !== false}
+        />
+      )}
+
+      {/* Achievement Popup */}
+      {showAchievement && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 animate-fade-in">
+          <h3 className="font-bold">{showAchievement.title}</h3>
+          <p className="text-sm">{showAchievement.description}</p>
+        </div>
+      )}
+
+      {/* Mobile Gesture Hint */}
+      {isMobile && showGestureHint && (
+        <MobileGestureHint
+          show={showGestureHint}
+          onDismiss={() => {
+            setShowGestureHint(false);
+            localStorage.setItem('gesture-hint-shown', 'true');
+          }}
+        />
+      )}
     </div>
     </EnhancedErrorBoundary>
   );
