@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { localDB } from '@/lib/localStorage';
+import { realAnalytics } from '@/lib/analytics';
 import { 
   BarChart3, 
   Users, 
@@ -84,94 +85,98 @@ export function AnalyticsDashboard({ quizId }: AnalyticsProps) {
     try {
       setLoading(true);
       
-      // Get quiz results from localStorage
-      const results = localDB.getQuizResults(quizId);
-      const leads = localDB.getQuizLeads(quizId);
+      // Get REAL analytics data from the analytics system
+      const realAnalyticsData = realAnalytics.getAnalyticsData(quizId);
+      
+      if (realAnalyticsData) {
+        // Use real data from analytics system
+        const {
+          totalViews,
+          totalStarts,
+          totalCompletions,
+          totalLeads,
+          conversionRate,
+          completionRate,
+          avgCompletionTime,
+          deviceBreakdown,
+          timeSpentData,
+          dropOffPoints,
+          dailyData
+        } = realAnalyticsData;
 
-      // Calculate basic metrics
-      const totalStarts = results.length;
-      const totalCompletions = results.filter(r => r.completedAt).length;
-      const totalLeads = leads.length;
-      const conversionRate = totalStarts > 0 ? Math.round((totalLeads / totalStarts) * 100) : 0;
-      const completionRate = totalStarts > 0 ? Math.round((totalCompletions / totalStarts) * 100) : 0;
+        // Get quiz results from localStorage for outcome distribution
+        const results = localDB.getQuizResults(quizId);
+        const outcomeCount: Record<string, number> = {};
+        results.forEach(r => {
+          if (r.outcomeKey) {
+            outcomeCount[r.outcomeKey] = (outcomeCount[r.outcomeKey] || 0) + 1;
+          }
+        });
 
-      // Calculate average completion time
-      const completedResults = results.filter(r => r.completedAt && r.startedAt);
-      const avgCompletionTime = completedResults.length > 0 
-        ? completedResults.reduce((acc, r) => {
-            const start = new Date(r.startedAt).getTime();
-            const end = new Date(r.completedAt!).getTime();
-            return acc + (end - start);
-          }, 0) / completedResults.length / 1000 / 60 // Convert to minutes
-        : 0;
+        const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+        const outcomeDistribution = Object.entries(outcomeCount).map(([name, value], index) => ({
+          name: name.charAt(0).toUpperCase() + name.slice(1),
+          value,
+          color: colors[index % colors.length]
+        }));
 
-      // Generate mock daily data (in a real app, this would come from analytics tracking)
-      const dailyData = Array.from({ length: 7 }, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - (6 - i));
-        const dayResults = Math.floor(Math.random() * 20) + 5;
-        
-        return {
-          date: date.toISOString().split('T')[0],
-          views: dayResults + Math.floor(Math.random() * 30),
-          starts: dayResults,
-          completions: Math.floor(dayResults * 0.7),
-          leads: Math.floor(dayResults * 0.3)
-        };
-      });
+        setAnalytics({
+          totalViews,
+          totalStarts,
+          totalCompletions,
+          totalLeads,
+          conversionRate,
+          completionRate,
+          avgCompletionTime,
+          dailyData,
+          outcomeDistribution,
+          deviceBreakdown,
+          timeSpentData,
+          dropoffPoints: dropOffPoints
+        });
+      } else {
+        // Fallback to localStorage data if no analytics data available
+        const results = localDB.getQuizResults(quizId);
+        const leads = localDB.getQuizLeads(quizId);
 
-      // Outcome distribution
-      const outcomeCount: Record<string, number> = {};
-      results.forEach(r => {
-        if (r.outcomeKey) {
-          outcomeCount[r.outcomeKey] = (outcomeCount[r.outcomeKey] || 0) + 1;
-        }
-      });
+        const totalStarts = results.length;
+        const totalCompletions = results.filter(r => r.completedAt).length;
+        const totalLeads = leads.length;
+        const conversionRate = totalStarts > 0 ? Math.round((totalLeads / totalStarts) * 100) : 0;
+        const completionRate = totalStarts > 0 ? Math.round((totalCompletions / totalStarts) * 100) : 0;
 
-      const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
-      const outcomeDistribution = Object.entries(outcomeCount).map(([name, value], index) => ({
-        name: name.charAt(0).toUpperCase() + name.slice(1),
-        value,
-        color: colors[index % colors.length]
-      }));
+        // Generate fallback data if no real data exists
+        const dailyData = Array.from({ length: 7 }, (_, i) => {
+          const date = new Date();
+          date.setDate(date.getDate() - (6 - i));
+          return {
+            date: date.toISOString().split('T')[0],
+            views: 0,
+            starts: 0,
+            completions: 0,
+            leads: 0
+          };
+        });
 
-      // Mock device data
-      const deviceBreakdown = [
-        { device: 'Mobile', count: Math.floor(totalStarts * 0.6), percentage: 60 },
-        { device: 'Desktop', count: Math.floor(totalStarts * 0.3), percentage: 30 },
-        { device: 'Tablet', count: Math.floor(totalStarts * 0.1), percentage: 10 }
-      ];
-
-      // Mock time spent data
-      const timeSpentData = [
-        { question: 'Pergunta 1', avgTime: Math.random() * 30 + 10 },
-        { question: 'Pergunta 2', avgTime: Math.random() * 30 + 10 },
-        { question: 'Pergunta 3', avgTime: Math.random() * 30 + 10 },
-        { question: 'Pergunta 4', avgTime: Math.random() * 30 + 10 },
-      ];
-
-      // Mock dropoff data
-      const dropoffPoints = [
-        { step: 1, dropoffRate: 5 },
-        { step: 2, dropoffRate: 12 },
-        { step: 3, dropoffRate: 20 },
-        { step: 4, dropoffRate: 8 },
-      ];
-
-      setAnalytics({
-        totalViews: dailyData.reduce((acc, day) => acc + day.views, 0),
-        totalStarts,
-        totalCompletions,
-        totalLeads,
-        conversionRate,
-        completionRate,
-        avgCompletionTime,
-        dailyData,
-        outcomeDistribution,
-        deviceBreakdown,
-        timeSpentData,
-        dropoffPoints
-      });
+        setAnalytics({
+          totalViews: 0,
+          totalStarts,
+          totalCompletions,
+          totalLeads,
+          conversionRate,
+          completionRate,
+          avgCompletionTime: 0,
+          dailyData,
+          outcomeDistribution: [],
+          deviceBreakdown: [
+            { device: 'Mobile', count: 0, percentage: 0 },
+            { device: 'Desktop', count: 0, percentage: 0 },
+            { device: 'Tablet', count: 0, percentage: 0 }
+          ],
+          timeSpentData: [],
+          dropoffPoints: []
+        });
+      }
 
     } catch (error) {
       console.error('Error loading analytics:', error);

@@ -17,6 +17,8 @@ import { MobileQuizNavigation } from '@/components/MobileQuizNavigation';
 import { MobileGestureHint } from '@/components/MobileGestureHint';
 import { useMobileGestures } from '@/hooks/useMobileGestures';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { realAnalytics } from '@/lib/analytics';
+import { realPixelSystem } from '@/lib/pixelSystem';
 
 const QuizRunner = () => {
   const { publicId } = useParams<{ publicId: string }>();
@@ -37,6 +39,7 @@ const QuizRunner = () => {
   const [showSplash, setShowSplash] = useState(isMobile);
   const [dataReady, setDataReady] = useState(false);
   const [showGestureHint, setShowGestureHint] = useState(isMobile && !localStorage.getItem('gesture-hint-shown'));
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
 
   // Mobile gestures for navigation
@@ -56,14 +59,30 @@ const QuizRunner = () => {
     enableTouch: isMobile && quiz?.questions && quiz.questions.length > 1
   });
 
-  // Reset selected options when step changes
+  // Reset selected options when step changes and track question view
   useEffect(() => {
     setSelectedOptions([]);
     setStepStartTime(Date.now());
-  }, [currentStep]);
+    
+    // Track question view in analytics
+    if (quiz && currentStep < (quiz.questions?.length || 0)) {
+      const currentQuestion = quiz.questions?.[currentStep];
+      if (currentQuestion) {
+        realAnalytics.trackQuestionView(currentStep, currentQuestion);
+      }
+    }
+  }, [currentStep, quiz]);
 
-  // Collect UTM parameters
+  // Collect UTM parameters and initialize tracking
   const utmParams = Object.fromEntries(searchParams.entries());
+  
+  // Extract and persist UTM parameters
+  useEffect(() => {
+    const extractedUTMs = realPixelSystem.constructor.extractUTMParameters();
+    if (Object.keys(extractedUTMs).length > 0) {
+      realPixelSystem.constructor.persistUTMParameters(extractedUTMs);
+    }
+  }, []);
 
   useEffect(() => {
     const loadQuiz = async () => {
@@ -72,6 +91,24 @@ const QuizRunner = () => {
       try {
         const loadedQuiz = await loadQuizByPublicId(publicId);
         setQuiz(loadedQuiz);
+        
+        if (loadedQuiz) {
+          // Initialize pixel system with quiz settings
+          const pixelSettings = loadedQuiz.pixelSettings || {};
+          const allUTMs = { ...utmParams, ...realPixelSystem.constructor.getPersistedUTMParameters() };
+          realPixelSystem.initialize(pixelSettings, allUTMs);
+          
+          // Initialize analytics session
+          const newSessionId = realAnalytics.initializeSession(loadedQuiz, allUTMs);
+          setSessionId(newSessionId);
+          
+          // Track quiz view
+          realPixelSystem.trackQuizView(loadedQuiz);
+          
+          // Track quiz start
+          realPixelSystem.trackQuizStart(loadedQuiz);
+        }
+        
         // Initialize step start time when quiz loads
         setStepStartTime(Date.now());
         
@@ -140,12 +177,18 @@ const QuizRunner = () => {
   const progress = quiz?.questions?.length ? (answeredStepsCount / quiz.questions.length) * 100 : 0;
 
   const handleAnswer = async (value: any) => {
-    if (!currentQuestion) return;
+    if (!currentQuestion || !quiz) return;
     
     // Calculate time spent on this step
     const answerTime = Date.now() - stepStartTime;
     const newUserAnswerTimes = [...userAnswerTimes, answerTime];
     const newAnsweredStepsCount = answeredStepsCount + 1;
+    
+    // Track question answer in analytics
+    realAnalytics.trackQuestionAnswer(currentStep, currentQuestion, value, answerTime);
+    
+    // Track question answer in pixels
+    realPixelSystem.trackQuestionAnswer(quiz, currentStep, currentQuestion.id, value);
     
     // Update timing states
     setUserAnswerTimes(newUserAnswerTimes);
@@ -211,6 +254,12 @@ const QuizRunner = () => {
 
         await saveResult(result);
 
+        // Track quiz completion in analytics
+        realAnalytics.trackCompletion(result);
+        
+        // Track quiz completion in pixels
+        realPixelSystem.trackQuizCompletion(quiz, result);
+
         // Check if we captured email to create lead
         const emailAnswer = newAnswers.find(answer => {
           const question = quiz?.questions?.find(q => q.id === answer.questionId);
@@ -226,10 +275,21 @@ const QuizRunner = () => {
             createdAt: now
           };
           await saveLead(lead);
+          
+          // Track lead capture in analytics
+          realAnalytics.trackLeadCapture(lead);
+          
+          // Track lead capture in pixels
+          realPixelSystem.trackLeadCapture(quiz, lead);
         }
 
         // Check for achievements
         checkAchievements(totalScore, newAnswers, newUserAnswerTimes);
+        
+        // Track specific result if outcome exists
+        if (result.outcomeKey) {
+          realPixelSystem.trackSpecificResult(quiz, result, result.outcomeKey);
+        }
         
         // Redirect to result page
         navigate(`/r/${resultId}`);
