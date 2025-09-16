@@ -78,9 +78,9 @@ const QuizRunner = () => {
   
   // Extract and persist UTM parameters
   useEffect(() => {
-    const extractedUTMs = realPixelSystem.constructor.extractUTMParameters();
+    const extractedUTMs = realPixelSystem.extractUTMParameters();
     if (Object.keys(extractedUTMs).length > 0) {
-      realPixelSystem.constructor.persistUTMParameters(extractedUTMs);
+      realPixelSystem.persistUTMParameters(extractedUTMs);
     }
   }, []);
 
@@ -91,12 +91,12 @@ const QuizRunner = () => {
       try {
         const loadedQuiz = await loadQuizByPublicId(publicId);
         setQuiz(loadedQuiz);
-        
+
         if (loadedQuiz) {
           // Initialize pixel system with quiz settings
           const pixelSettings = loadedQuiz.pixelSettings || {};
-          const allUTMs = { ...utmParams, ...realPixelSystem.constructor.getPersistedUTMParameters() };
-          realPixelSystem.initialize(pixelSettings, allUTMs);
+          const allUTMs = { ...utmParams, ...realPixelSystem.getPersistedUTMParameters() };
+          realPixelSystem.initialize(pixelSettings as any, allUTMs);
           
           // Initialize analytics session
           const newSessionId = realAnalytics.initializeSession(loadedQuiz, allUTMs);

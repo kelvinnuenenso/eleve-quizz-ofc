@@ -62,6 +62,124 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_events: {
+        Row: {
+          created_at: string
+          device_info: Json | null
+          event_data: Json
+          event_type: string
+          id: string
+          quiz_id: string
+          referrer: string | null
+          session_id: string
+          user_agent: string | null
+          user_id: string | null
+          utm_params: Json | null
+        }
+        Insert: {
+          created_at?: string
+          device_info?: Json | null
+          event_data?: Json
+          event_type: string
+          id?: string
+          quiz_id: string
+          referrer?: string | null
+          session_id: string
+          user_agent?: string | null
+          user_id?: string | null
+          utm_params?: Json | null
+        }
+        Update: {
+          created_at?: string
+          device_info?: Json | null
+          event_data?: Json
+          event_type?: string
+          id?: string
+          quiz_id?: string
+          referrer?: string | null
+          session_id?: string
+          user_agent?: string | null
+          user_id?: string | null
+          utm_params?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_events_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analytics_sessions: {
+        Row: {
+          answers: Json | null
+          completed: boolean | null
+          created_at: string
+          current_step: number | null
+          device_info: Json | null
+          drop_off_point: number | null
+          id: string
+          lead_captured: boolean | null
+          quiz_id: string
+          session_id: string
+          start_time: number
+          step_end_times: Json | null
+          step_start_times: Json | null
+          total_steps: number
+          updated_at: string
+          user_id: string | null
+          utm_params: Json | null
+        }
+        Insert: {
+          answers?: Json | null
+          completed?: boolean | null
+          created_at?: string
+          current_step?: number | null
+          device_info?: Json | null
+          drop_off_point?: number | null
+          id?: string
+          lead_captured?: boolean | null
+          quiz_id: string
+          session_id: string
+          start_time: number
+          step_end_times?: Json | null
+          step_start_times?: Json | null
+          total_steps: number
+          updated_at?: string
+          user_id?: string | null
+          utm_params?: Json | null
+        }
+        Update: {
+          answers?: Json | null
+          completed?: boolean | null
+          created_at?: string
+          current_step?: number | null
+          device_info?: Json | null
+          drop_off_point?: number | null
+          id?: string
+          lead_captured?: boolean | null
+          quiz_id?: string
+          session_id?: string
+          start_time?: number
+          step_end_times?: Json | null
+          step_start_times?: Json | null
+          total_steps?: number
+          updated_at?: string
+          user_id?: string | null
+          utm_params?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analytics_sessions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaigns: {
         Row: {
           created_at: string
@@ -1028,6 +1146,214 @@ export type Database = {
           },
         ]
       }
+      quiz_leads: {
+        Row: {
+          created_at: string
+          custom_fields: Json | null
+          email: string | null
+          id: string
+          name: string | null
+          phone: string | null
+          quiz_id: string
+          result_id: string
+          tags: string[] | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          custom_fields?: Json | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          phone?: string | null
+          quiz_id: string
+          result_id: string
+          tags?: string[] | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          custom_fields?: Json | null
+          email?: string | null
+          id?: string
+          name?: string | null
+          phone?: string | null
+          quiz_id?: string
+          result_id?: string
+          tags?: string[] | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_leads_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_leads_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_results: {
+        Row: {
+          answers: Json
+          completed_at: string | null
+          created_at: string
+          id: string
+          meta: Json | null
+          outcome_key: string | null
+          quiz_id: string
+          score: number | null
+          session_id: string | null
+          started_at: string
+          user_id: string | null
+          utm_params: Json | null
+        }
+        Insert: {
+          answers?: Json
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          outcome_key?: string | null
+          quiz_id: string
+          score?: number | null
+          session_id?: string | null
+          started_at: string
+          user_id?: string | null
+          utm_params?: Json | null
+        }
+        Update: {
+          answers?: Json
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          outcome_key?: string | null
+          quiz_id?: string
+          score?: number | null
+          session_id?: string | null
+          started_at?: string
+          user_id?: string | null
+          utm_params?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_results_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_webhooks: {
+        Row: {
+          active: boolean | null
+          created_at: string
+          events: string[]
+          headers: Json | null
+          id: string
+          name: string
+          quiz_id: string
+          retry_count: number | null
+          timeout_seconds: number | null
+          updated_at: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean | null
+          created_at?: string
+          events?: string[]
+          headers?: Json | null
+          id?: string
+          name: string
+          quiz_id: string
+          retry_count?: number | null
+          timeout_seconds?: number | null
+          updated_at?: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean | null
+          created_at?: string
+          events?: string[]
+          headers?: Json | null
+          id?: string
+          name?: string
+          quiz_id?: string
+          retry_count?: number | null
+          timeout_seconds?: number | null
+          updated_at?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_webhooks_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quizzes: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          outcomes: Json | null
+          pixel_settings: Json | null
+          public_id: string
+          questions: Json
+          settings: Json | null
+          status: string
+          theme: Json | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          outcomes?: Json | null
+          pixel_settings?: Json | null
+          public_id: string
+          questions?: Json
+          settings?: Json | null
+          status?: string
+          theme?: Json | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          outcomes?: Json | null
+          pixel_settings?: Json | null
+          public_id?: string
+          questions?: Json
+          settings?: Json | null
+          status?: string
+          theme?: Json | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       scripts: {
         Row: {
           campaign_id: string | null
@@ -1402,6 +1728,50 @@ export type Database = {
           username?: string | null
         }
         Relationships: []
+      }
+      webhook_logs: {
+        Row: {
+          attempt_count: number | null
+          error_message: string | null
+          event_type: string
+          executed_at: string
+          id: string
+          payload: Json
+          response_body: string | null
+          response_status: number | null
+          webhook_id: string
+        }
+        Insert: {
+          attempt_count?: number | null
+          error_message?: string | null
+          event_type: string
+          executed_at?: string
+          id?: string
+          payload: Json
+          response_body?: string | null
+          response_status?: number | null
+          webhook_id: string
+        }
+        Update: {
+          attempt_count?: number | null
+          error_message?: string | null
+          event_type?: string
+          executed_at?: string
+          id?: string
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+          webhook_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_logs_webhook_id_fkey"
+            columns: ["webhook_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_webhooks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_connections: {
         Row: {
