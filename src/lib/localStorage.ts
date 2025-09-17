@@ -109,6 +109,18 @@ class LocalStorageManager {
     }
   }
 
+  clearUserProfile(): void {
+    try {
+      if (typeof Storage === 'undefined') {
+        console.warn('localStorage is not available');
+        return;
+      }
+      localStorage.removeItem(STORAGE_KEYS.USER_PROFILE);
+    } catch (error) {
+      console.error('Error clearing user profile:', error);
+    }
+  }
+
   // Quiz Management
   saveQuiz(quiz: Quiz): void {
     const quizzes = this.getItem<Quiz>(STORAGE_KEYS.QUIZZES);
