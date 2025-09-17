@@ -144,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await supabase.auth.signOut();
       // Clear localStorage data on sign out
-      localDB.clearUserProfile();
+      localStorage.removeItem('elevado-user-profile');
     } catch (error) {
       console.error('Error signing out:', error);
     }
