@@ -1,19 +1,15 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { User, Session } from '@supabase/supabase-js';
 import { localDB, type UserProfile } from '@/lib/localStorage';
-
-interface User {
-  id: string;
-  email: string;
-  user_metadata?: {
-    full_name?: string;
-  };
-}
 
 interface AuthContextType {
   user: User | null;
+  session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName?: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
+  signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -21,40 +17,67 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in (mock)
-    const profile = localDB.getUserProfile();
-    if (profile) {
-      setUser({
-        id: profile.id,
-        email: profile.email,
-        user_metadata: {
-          full_name: profile.name
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        // Sync user profile when session changes
+        if (session?.user) {
+          setTimeout(() => {
+            syncUserProfile(session.user);
+          }, 0);
         }
-      });
-    }
-    setLoading(false);
+        
+        setLoading(false);
+      }
+    );
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        syncUserProfile(session.user);
+      }
+      
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signIn = async (email: string, password: string) => {
-    // Mock sign in - in a real app this would validate credentials
-    const mockUser: User = {
-      id: 'mock-user-id',
-      email: email,
-      user_metadata: {
-        full_name: email.split('@')[0]
-      }
-    };
+  const syncUserProfile = async (user: User) => {
+    try {
+      // Check if profile exists in Supabase
+      const { data: existingProfile } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
 
-    // Create or get user profile
-    let profile = localDB.getUserProfile();
-    if (!profile) {
-      profile = {
-        id: mockUser.id,
-        name: mockUser.user_metadata?.full_name || email.split('@')[0],
-        email: email,
+      if (!existingProfile) {
+        // Create profile in Supabase if it doesn't exist
+        await supabase
+          .from('user_profiles')
+          .insert({
+            user_id: user.id,
+            display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+            username: user.email?.split('@')[0],
+          });
+      }
+
+      // Sync with localStorage for offline access
+      const profile: UserProfile = {
+        id: user.id,
+        name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+        email: user.email || '',
         createdAt: new Date().toISOString(),
         plan: 'free',
         settings: {
@@ -64,51 +87,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       };
       localDB.saveUserProfile(profile);
+    } catch (error) {
+      console.error('Error syncing user profile:', error);
     }
+  };
 
-    setUser(mockUser);
+  const signIn = async (email: string, password: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error };
+    } catch (error) {
+      return { error };
+    }
   };
 
   const signUp = async (email: string, password: string, fullName?: string) => {
-    // Mock sign up
-    const mockUser: User = {
-      id: crypto.randomUUID(),
-      email: email,
-      user_metadata: {
-        full_name: fullName || email.split('@')[0]
-      }
-    };
+    try {
+      const redirectUrl = `${window.location.origin}/app`;
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            full_name: fullName || email.split('@')[0]
+          }
+        }
+      });
+      return { error };
+    } catch (error) {
+      return { error };
+    }
+  };
 
-    // Create user profile
-    const profile: UserProfile = {
-      id: mockUser.id,
-      name: fullName || email.split('@')[0],
-      email: email,
-      createdAt: new Date().toISOString(),
-      plan: 'free',
-      settings: {
-        theme: 'light',
-        notifications: true,
-        autoSave: true
-      }
-    };
-
-    localDB.saveUserProfile(profile);
-    setUser(mockUser);
+  const signInWithGoogle = async () => {
+    try {
+      const redirectUrl = `${window.location.origin}/app`;
+      
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl
+        }
+      });
+      return { error };
+    } catch (error) {
+      return { error };
+    }
   };
 
   const signOut = async () => {
-    // In a real app, this would call the auth service
-    setUser(null);
-    // Note: We don't clear the profile data so user can sign back in
+    try {
+      await supabase.auth.signOut();
+      // Clear localStorage data on sign out
+      localDB.clearUserProfile();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   return (
     <AuthContext.Provider value={{
       user,
+      session,
       loading,
       signIn,
       signUp,
+      signInWithGoogle,
       signOut
     }}>
       {children}
