@@ -5,9 +5,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
+import { useEffect } from "react";
 import { useErrorRecovery } from "@/hooks/useErrorRecovery";
 import { PWAPrompt } from "@/components/PWAPrompt";
 import { PerformanceMonitor } from "@/components/PerformanceMonitor";
+import { supabaseSync } from "@/lib/supabaseSync";
+import { webhookSystem } from "@/lib/webhookSystem";
+import { realAnalytics } from "@/lib/analytics";
+import { realPixelSystem } from "@/lib/pixelSystem";
 import Index from "./pages/Index";
 import { ProtectedRoute } from './components/ProtectedRoute';
 import Dashboard from "./pages/Dashboard";
@@ -37,6 +42,31 @@ const queryClient = new QueryClient({
 
 const AppContent = () => {
   useErrorRecovery();
+
+  // Auto-initialize all analytics systems on app start
+  useEffect(() => {
+    const initializeSystems = async () => {
+      try {
+        // Start auto-sync with Supabase
+        supabaseSync.startAutoSync();
+        
+        // Initialize webhook system
+        webhookSystem.initialize();
+        
+        // Initialize pixel system with UTM tracking
+        const utmParams = realPixelSystem.extractUTMParameters();
+        if (Object.keys(utmParams).length > 0) {
+          realPixelSystem.persistUTMParameters(utmParams);
+        }
+        
+        console.log('🚀 Analytics systems fully activated');
+      } catch (error) {
+        console.error('Error initializing analytics systems:', error);
+      }
+    };
+    
+    initializeSystems();
+  }, []);
   
   return (
     <>

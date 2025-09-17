@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { localDB } from '@/lib/localStorage';
 import { realAnalytics } from '@/lib/analytics';
+import { supabaseSync } from '@/lib/supabaseSync';
 import { 
   BarChart3, 
   Users, 
@@ -85,24 +86,62 @@ export function AnalyticsDashboard({ quizId }: AnalyticsProps) {
     try {
       setLoading(true);
       
-      // Get REAL analytics data from the analytics system
+      // 1. Try to get data from Supabase first (PRODUCTION DATA)
+      const dateStart = new Date(Date.now() - (parseInt(dateRange) || 7) * 24 * 60 * 60 * 1000).toISOString();
+      const supabaseData = await supabaseSync.getAnalyticsFromSupabase(quizId, dateStart);
+      
+      // 2. Get REAL analytics data from local system
       const realAnalyticsData = realAnalytics.getAnalyticsData(quizId);
       
-      if (realAnalyticsData) {
-        // Use real data from analytics system
-        const {
-          totalViews,
-          totalStarts,
-          totalCompletions,
-          totalLeads,
-          conversionRate,
-          completionRate,
-          avgCompletionTime,
-          deviceBreakdown,
-          timeSpentData,
-          dropOffPoints,
-          dailyData
-        } = realAnalyticsData;
+      // 3. Trigger background sync
+      supabaseSync.syncAllLocalData();
+      
+      if (supabaseData || realAnalyticsData) {
+        let analyticsData;
+        
+        if (realAnalyticsData) {
+          // Use processed data from analytics system
+          analyticsData = realAnalyticsData;
+        } else if (supabaseData) {
+          // Process raw Supabase data into analytics format
+          const { events, sessions } = supabaseData;
+          const totalStarts = sessions.length;
+          const totalCompletions = sessions.filter((s: any) => s.completed_at).length;
+          const leadEvents = events.filter((e: any) => e.event_type === 'lead_capture');
+          const totalLeads = leadEvents.length;
+          
+          analyticsData = {
+            totalViews: events.filter((e: any) => e.event_type === 'quiz_view').length,
+            totalStarts,
+            totalCompletions,
+            totalLeads,
+            conversionRate: totalStarts > 0 ? Math.round((totalLeads / totalStarts) * 100) : 0,
+            completionRate: totalStarts > 0 ? Math.round((totalCompletions / totalStarts) * 100) : 0,
+            avgCompletionTime: sessions.length > 0 ? sessions.reduce((acc: number, s: any) => acc + (s.completion_time || 0), 0) / sessions.length : 0,
+            deviceBreakdown: [
+              { device: 'Mobile', count: 0, percentage: 0 },
+              { device: 'Desktop', count: 0, percentage: 0 }
+            ],
+            timeSpentData: [],
+            dropOffPoints: [],
+            dailyData: []
+          };
+        }
+        
+        if (analyticsData) {
+          const {
+            totalViews,
+            totalStarts, 
+            totalCompletions,
+            totalLeads,
+            conversionRate,
+            completionRate,
+            avgCompletionTime,
+            deviceBreakdown,
+            timeSpentData,
+            dropOffPoints,
+            dailyData
+          } = analyticsData;
 
         // Get quiz results from localStorage for outcome distribution
         const results = localDB.getQuizResults(quizId);
@@ -134,6 +173,7 @@ export function AnalyticsDashboard({ quizId }: AnalyticsProps) {
           timeSpentData,
           dropoffPoints: dropOffPoints
         });
+        }
       } else {
         // Fallback to localStorage data if no analytics data available
         const results = localDB.getQuizResults(quizId);

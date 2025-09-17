@@ -19,6 +19,8 @@ import { useMobileGestures } from '@/hooks/useMobileGestures';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { realAnalytics } from '@/lib/analytics';
 import { realPixelSystem } from '@/lib/pixelSystem';
+import { supabaseSync } from '@/lib/supabaseSync';
+import { webhookSystem } from '@/lib/webhookSystem';
 
 const QuizRunner = () => {
   const { publicId } = useParams<{ publicId: string }>();
@@ -107,6 +109,9 @@ const QuizRunner = () => {
           
           // Track quiz start
           realPixelSystem.trackQuizStart(loadedQuiz);
+          
+          // Trigger webhook for quiz start
+          webhookSystem.triggerWebhooks('quiz_start', loadedQuiz, { sessionId: newSessionId });
         }
         
         // Initialize step start time when quiz loads
@@ -259,6 +264,12 @@ const QuizRunner = () => {
         
         // Track quiz completion in pixels
         realPixelSystem.trackQuizCompletion(quiz, result);
+        
+        // Trigger webhooks for quiz completion
+        await webhookSystem.triggerWebhooks('quiz_complete', quiz, result);
+        
+        // Auto-sync to Supabase in background
+        supabaseSync.syncAllLocalData();
 
         // Check if we captured email to create lead
         const emailAnswer = newAnswers.find(answer => {
@@ -281,6 +292,9 @@ const QuizRunner = () => {
           
           // Track lead capture in pixels
           realPixelSystem.trackLeadCapture(quiz, lead);
+          
+          // Trigger webhooks for lead capture
+          await webhookSystem.triggerWebhooks('lead_capture', quiz, lead);
         }
 
         // Check for achievements
