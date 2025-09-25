@@ -66,7 +66,7 @@ const Dashboard = () => {
 
           if (response.ok) {
             const data = await response.json();
-            setQuizzes(data.quizzes);
+            setQuizzes(data.data || []);
             return;
           } else {
             console.warn('Failed to load from API, falling back to localStorage');
@@ -148,7 +148,7 @@ const Dashboard = () => {
               description: "Você pode começar a editá-lo agora."
             });
 
-            navigate(`/app/edit/${data.quiz.id}`);
+            navigate(`/app/edit/${data.data.id}`);
             return;
           } else {
             const errorData = await response.json();
