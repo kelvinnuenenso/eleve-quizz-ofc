@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { listQuizzes, saveQuiz } from '@/lib/quizzes';
 import { quizzesApi } from '@/lib/supabaseApi';
 import { localDB } from '@/lib/localStorage';
-import { useAuth } from '@/components/SimpleAuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { Quiz } from '@/types/quiz';
 import { generateTestAnalyticsData, clearTestAnalyticsData } from '@/lib/generateTestAnalytics';
 import {

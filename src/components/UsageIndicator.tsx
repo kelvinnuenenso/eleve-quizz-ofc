@@ -4,7 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { BarChart3, Database, TrendingUp, AlertTriangle, Zap } from 'lucide-react';
-import { useAuth } from '@/components/SimpleAuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { UsageTracker, UsageStats, UsageWarning } from '@/lib/usageTracker';
 import { errorHandler } from '@/lib/errorHandling';
 

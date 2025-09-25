@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Lock, Crown, Zap } from 'lucide-react';
-import { useAuth } from '@/components/SimpleAuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { UsageTracker } from '@/lib/usageTracker';
 import { PlanUpgradeModal } from './PlanUpgradeModal';
 

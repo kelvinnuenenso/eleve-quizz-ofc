@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/components/SimpleAuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Auth() {
@@ -28,51 +28,28 @@ export default function Auth() {
     
     try {
       if (isSignUp) {
-        // Use REST API for signup
-        const response = await fetch('/api/auth/signup', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email,
-            password,
-            fullName,
-            plan: 'starter'
-          }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
+        // Use Supabase Auth directly
+        const { error } = await signUp(email, password, fullName);
+        
+        if (!error) {
           toast({
             title: "Conta criada!",
-            description: data.message || "Verifique seu email para confirmar a conta."
+            description: "Verifique seu email para confirmar a conta."
           });
           setIsSignUp(false); // Switch to login form
         } else {
+          console.error('Signup error:', error);
           toast({
             title: "Erro na criação da conta",
-            description: data.message || "Não foi possível criar a conta.",
+            description: error.message || "Não foi possível criar a conta.",
             variant: "destructive",
           });
         }
       } else {
-        // Use REST API for login
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email,
-            password,
-          }),
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
+        // Use Supabase Auth directly
+        const { error } = await signIn(email, password);
+        
+        if (!error) {
           toast({
             title: "Login realizado!",
             description: "Bem-vindo de volta!"
@@ -80,9 +57,10 @@ export default function Auth() {
           // The useAuth hook will handle the session automatically
           navigate('/app');
         } else {
+          console.error('Login error:', error);
           toast({
             title: "Erro no login",
-            description: data.message || "Credenciais inválidas.",
+            description: error.message || "Credenciais inválidas.",
             variant: "destructive",
           });
         }

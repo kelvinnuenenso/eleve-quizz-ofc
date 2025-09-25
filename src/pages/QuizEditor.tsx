@@ -13,7 +13,7 @@ import { saveQuiz, loadQuiz, deleteQuiz } from '@/lib/quizzes';
 import { quizzesApi, questionsApi, optionsApi } from '@/lib/supabaseApi';
 import { Quiz, Question, QuestionType } from '@/types/quiz';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/components/SimpleAuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { QuestionEditor } from '@/components/quiz/QuestionEditor';
 import { ThemeEditor } from '@/components/quiz/ThemeEditor';
 import { OutcomeEditor } from '@/components/quiz/OutcomeEditor';

@@ -2,7 +2,7 @@ import React from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { SimpleAuthProvider } from "@/components/SimpleAuthProvider";
+import { AuthProvider } from "@/hooks/useAuth";
 import { TooltipProvider } from "@/components/ui/simple-tooltip";
 import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
 
@@ -88,14 +88,14 @@ const App = () => (
   >
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <SimpleAuthProvider>
+        <AuthProvider>
           <BrowserRouter>
             <EnhancedErrorBoundary componentName="Router">
               <AppContent />
               <Sonner />
             </EnhancedErrorBoundary>
           </BrowserRouter>
-        </SimpleAuthProvider>
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   </EnhancedErrorBoundary>

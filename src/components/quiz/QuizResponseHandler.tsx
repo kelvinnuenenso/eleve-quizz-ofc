@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { responsesApi } from '@/lib/supabaseApi';
-import { useAuth } from '@/components/SimpleAuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { errorHandler } from '@/lib/errorHandling';
 import type { Result, QuizAnswer } from '@/types/quiz';

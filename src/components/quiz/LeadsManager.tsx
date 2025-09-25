@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { localDB } from '@/lib/localStorage';
 import { Lead, Quiz, Result } from '@/types/quiz';
-import { useAuth } from '@/components/SimpleAuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { DEMO_LEADS } from '@/lib/demoData';
 import { 
   Users, 

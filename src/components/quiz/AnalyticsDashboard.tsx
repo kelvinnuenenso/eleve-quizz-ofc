@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { localDB } from '@/lib/localStorage';
 import { realAnalytics } from '@/lib/analytics';
 import { supabaseSync } from '@/lib/supabaseSync';
-import { useAuth } from '@/components/SimpleAuthProvider';
+import { useAuth } from '@/hooks/useAuth';
 import { DEMO_ANALYTICS } from '@/lib/demoData';
 import { 
   BarChart3, 
