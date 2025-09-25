@@ -42,7 +42,7 @@ export const IntelligentProgressConfigComponent: React.FC<IntelligentProgressCon
     });
   };
 
-  const updatePhase = (phase: 'fastPhase' | 'linearPhase' | 'slowPhase', updates: any) => {
+  const updatePhase = (phase: 'fastPhase' | 'linearPhase' | 'slowPhase', updates: Record<string, unknown>) => {
     updateConfig({
       [phase]: {
         ...config[phase],

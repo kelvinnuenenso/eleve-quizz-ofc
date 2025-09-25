@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { localDB } from '@/lib/localStorage';
 import { Lead, Quiz, Result } from '@/types/quiz';
+import { useAuth } from '@/components/SimpleAuthProvider';
+import { DEMO_LEADS } from '@/lib/demoData';
 import { 
   Users, 
   Download, 
@@ -59,6 +61,26 @@ const LeadsManager = ({ quizId }: LeadsManagerProps) => {
   const loadLeads = () => {
     setLoading(true);
     try {
+      // Verificar se estamos em modo demo
+      const { isDemoMode } = useAuth();
+      
+      if (isDemoMode) {
+        // Usar dados demo
+        const demoLeads = DEMO_LEADS;
+        const leadsWithDetails: LeadWithDetails[] = demoLeads.map(lead => ({
+          ...lead,
+          quiz: { id: 'demo-quiz', name: 'Quiz Demo', questions: [], outcomes: [] } as Quiz,
+          result: { id: 'demo-result', quizId: 'demo-quiz', answers: [], score: 85, outcomeKey: 'intermediario' } as Result,
+          score: 85,
+          outcomeKey: 'intermediario'
+        }));
+        
+        setLeads(leadsWithDetails);
+        setLoading(false);
+        return;
+      }
+      
+      // Carregar dados reais para usuários autenticados
       const allLeads = quizId ? localDB.getQuizLeads(quizId) : localDB.getAllLeads();
       const allQuizzes = localDB.getAllQuizzes();
       const allResults = quizId ? localDB.getQuizResults(quizId) : [];
@@ -80,9 +102,9 @@ const LeadsManager = ({ quizId }: LeadsManagerProps) => {
     } catch (error) {
       console.error('Error loading leads:', error);
       toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar os leads.',
-        variant: 'destructive'
+        title: "Erro",
+        description: "Não foi possível carregar os leads.",
+        variant: "destructive"
       });
     } finally {
       setLoading(false);

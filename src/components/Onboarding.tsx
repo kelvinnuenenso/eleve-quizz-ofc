@@ -77,7 +77,7 @@ export function Onboarding({ isOpen, onComplete, onSkip }: OnboardingProps) {
     }
   };
 
-  const updateData = (key: keyof OnboardingData, value: any) => {
+  const updateData = (key: keyof OnboardingData, value: unknown) => {
     setData(prev => ({ ...prev, [key]: value }));
   };
 

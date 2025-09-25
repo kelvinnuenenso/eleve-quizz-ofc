@@ -6,7 +6,7 @@ import { TestTube, User, Crown, Star, Settings } from 'lucide-react';
 import { DemoUserManager, type DemoUser } from '@/lib/demoUser';
 import { DEMO_USERS } from '@/lib/demoData';
 import { useState } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface DemoModeIndicatorProps {
   showDetails?: boolean;

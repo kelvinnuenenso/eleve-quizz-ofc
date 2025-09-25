@@ -1,23 +1,60 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { PlanManager } from '@/lib/planManager';
-import { AlertTriangle, TrendingUp, Database, BarChart3, Crown } from 'lucide-react';
-import { PlanUpgradeModal } from './PlanUpgradeModal';
-import { useState } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { BarChart3, Database, TrendingUp, AlertTriangle, Zap } from 'lucide-react';
+import { useAuth } from '@/components/SimpleAuthProvider';
+import { UsageTracker, UsageStats, UsageWarning } from '@/lib/usageTracker';
+import { errorHandler } from '@/lib/errorHandling';
 
 interface UsageIndicatorProps {
-  type?: 'compact' | 'detailed' | 'dashboard';
-  showUpgrade?: boolean;
+  type?: 'compact' | 'dashboard' | 'detailed';
+  showWarnings?: boolean;
 }
 
-export function UsageIndicator({ type = 'compact', showUpgrade = true }: UsageIndicatorProps) {
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const usage = PlanManager.getUsageStats();
-  const warnings = PlanManager.getUsageWarnings();
-  const recommendation = PlanManager.getPlanRecommendation();
+export function UsageIndicator({ type = 'compact', showWarnings = true }: UsageIndicatorProps) {
+  const { currentUser } = useAuth();
+  const [usage, setUsage] = useState<UsageStats | null>(null);
+  const [warnings, setWarnings] = useState<UsageWarning[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    const loadUsageData = async () => {
+      try {
+        setLoading(true);
+        const [usageData, warningsData] = await Promise.all([
+          UsageTracker.getUserUsage(currentUser.id),
+          UsageTracker.getUsageWarnings(currentUser.id)
+        ]);
+        
+        setUsage(usageData);
+        setWarnings(warningsData);
+      } catch (error) {
+        errorHandler.handleError(error, {
+          context: 'UsageIndicator.loadUsageData',
+          userId: currentUser.id
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUsageData();
+  }, [currentUser?.id]);
+
+  if (loading || !usage) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="w-2 h-2 rounded-full bg-gray-300 animate-pulse" />
+        <span className="text-xs text-muted-foreground">Carregando...</span>
+      </div>
+    );
+  }
+
+  const recommendation = UsageTracker.getPlanRecommendation(usage);
 
   const formatBytes = (bytes: number): string => {
     if (bytes === 0) return '0 B';
@@ -63,12 +100,18 @@ export function UsageIndicator({ type = 'compact', showUpgrade = true }: UsageIn
           </span>
         </div>
         
-        {warnings.length > 0 && (
+        {warnings.length > 0 && showWarnings && (
           <AlertTriangle className="w-4 h-4 text-yellow-500" />
         )}
       </div>
     );
   }
+
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+    return num.toString();
+  };
 
   if (type === 'dashboard') {
     return (
@@ -154,39 +197,22 @@ export function UsageIndicator({ type = 'compact', showUpgrade = true }: UsageIn
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-semibold">Uso do Plano</h3>
-          {recommendation.shouldUpgrade && showUpgrade && (
-            <Button 
-              onClick={() => setShowUpgradeModal(true)}
-              size="sm"
-              className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:opacity-90"
-            >
-              <Crown className="w-4 h-4 mr-2" />
-              Upgrade
-            </Button>
+          {recommendation && (
+            <Badge variant="outline" className="text-xs">
+              <Zap className="w-3 h-3 mr-1" />
+              {recommendation}
+            </Badge>
           )}
         </div>
 
         {/* Warnings */}
-        {warnings.length > 0 && (
+        {warnings.length > 0 && showWarnings && (
           <div className="space-y-2">
             {warnings.map((warning, index) => (
-              <div 
-                key={index}
-                className={`flex items-center gap-2 p-3 rounded-lg ${
-                  warning.type === 'error' 
-                    ? 'bg-red-50 border border-red-200' 
-                    : 'bg-yellow-50 border border-yellow-200'
-                }`}
-              >
-                <AlertTriangle className={`w-4 h-4 ${
-                  warning.type === 'error' ? 'text-red-500' : 'text-yellow-500'
-                }`} />
-                <span className={`text-sm ${
-                  warning.type === 'error' ? 'text-red-700' : 'text-yellow-700'
-                }`}>
-                  {warning.message}
-                </span>
-              </div>
+              <Alert key={index} variant={warning.type === 'error' ? 'destructive' : 'default'}>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>{warning.message}</AlertDescription>
+              </Alert>
             ))}
           </div>
         )}
@@ -194,83 +220,56 @@ export function UsageIndicator({ type = 'compact', showUpgrade = true }: UsageIn
         {/* Usage Details */}
         <div className="space-y-4">
           {/* Quizzes */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Quizzes</span>
-              <span className="text-sm text-muted-foreground">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-blue-500" />
+                <span className="font-medium">Quizzes</span>
+              </div>
+              <span className={`text-sm font-medium ${getUsageColor(usage.quizzes.percentage)}`}>
                 {usage.quizzes.current}/{usage.quizzes.limit === -1 ? '∞' : usage.quizzes.limit}
               </span>
             </div>
             {usage.quizzes.limit !== -1 && (
-              <Progress 
-                value={usage.quizzes.percentage} 
-                className="h-2"
-              />
+              <Progress value={usage.quizzes.percentage} className="h-2" />
             )}
           </div>
 
           {/* Storage */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Armazenamento</span>
-              <span className="text-sm text-muted-foreground">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Database className="w-4 h-4 text-green-500" />
+                <span className="font-medium">Armazenamento</span>
+              </div>
+              <span className={`text-sm font-medium ${getUsageColor(usage.storage.percentage)}`}>
                 {formatBytes(usage.storage.current)}
                 {usage.storage.limit !== -1 && ` / ${formatBytes(usage.storage.limit)}`}
               </span>
             </div>
             {usage.storage.limit !== -1 && (
-              <Progress 
-                value={usage.storage.percentage} 
-                className="h-2"
-              />
+              <Progress value={usage.storage.percentage} className="h-2" />
             )}
           </div>
 
           {/* Responses */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Respostas (este mês)</span>
-              <span className="text-sm text-muted-foreground">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-purple-500" />
+                <span className="font-medium">Respostas (este mês)</span>
+              </div>
+              <span className={`text-sm font-medium ${getUsageColor(usage.responses.percentage)}`}>
                 {formatNumber(usage.responses.current)}
                 {usage.responses.limit !== -1 && ` / ${formatNumber(usage.responses.limit)}`}
               </span>
             </div>
             {usage.responses.limit !== -1 && (
-              <Progress 
-                value={usage.responses.percentage} 
-                className="h-2"
-              />
+              <Progress value={usage.responses.percentage} className="h-2" />
             )}
           </div>
         </div>
-
-        {/* Recommendations */}
-        {recommendation.shouldUpgrade && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-medium text-blue-900 mb-2">💡 Recomendação de Upgrade</h4>
-            <ul className="text-sm text-blue-700 space-y-1 mb-3">
-              {recommendation.reasons.map((reason, index) => (
-                <li key={index}>• {reason}</li>
-              ))}
-            </ul>
-            {showUpgrade && (
-              <Button 
-                onClick={() => setShowUpgradeModal(true)}
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                Ver Planos
-              </Button>
-            )}
-          </div>
-        )}
       </div>
-
-      <PlanUpgradeModal
-        isOpen={showUpgradeModal}
-        onClose={() => setShowUpgradeModal(false)}
-        suggestedPlan={recommendation.recommendedPlan === 'free' ? 'pro' : recommendation.recommendedPlan}
-      />
     </Card>
   );
 }

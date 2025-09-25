@@ -18,7 +18,7 @@ import {
 import { Eye, Zap, Search, Star, Crown, Filter, Clock, Users2, TrendingUp } from 'lucide-react';
 
 interface ExpandedTemplatesProps {
-  onSelectTemplate: (template: any) => void;
+  onSelectTemplate: (template: Record<string, unknown>) => void;
 }
 
 const ExpandedTemplates = ({ onSelectTemplate }: ExpandedTemplatesProps) => {

@@ -13,6 +13,28 @@ export type QuestionType =
   | 'consent' 
   | 'cta';
 
+export interface QuestionLogic {
+  showIf?: {
+    questionId: string;
+    operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
+    value: string | number | boolean;
+  }[];
+  skipIf?: {
+    questionId: string;
+    operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
+    value: string | number | boolean;
+  }[];
+}
+
+export interface QuestionSettings {
+  allowMultiple?: boolean;
+  randomizeOptions?: boolean;
+  timeLimit?: number;
+  showProgressBar?: boolean;
+  customValidation?: string;
+  [key: string]: unknown;
+}
+
 // Novos tipos de componentes para o construtor visual
 export type ComponentType =
   | 'text'
@@ -69,9 +91,9 @@ export interface Question {
   description?: string;
   options?: QuestionOption[];
   required?: boolean;
-  logic?: any;
+  logic?: QuestionLogic;
   score_weight?: number;
-  settings?: any;
+  settings?: QuestionSettings;
 }
 
 export interface QuizTheme {
@@ -198,7 +220,12 @@ export interface QuizTheme {
   microRewardsAchievementSound?: string;
   microRewardsFinalScore?: boolean;
   microRewardsShowProfile?: boolean;
-  microRewardsCustomProfiles?: any[];
+  microRewardsCustomProfiles?: Array<{
+    id: string;
+    name: string;
+    avatar?: string;
+    description?: string;
+  }>;
   // Social Sharing
   socialSharingEnabled?: boolean;
   socialSharingWhatsApp?: boolean;
@@ -301,7 +328,7 @@ export interface QuizOutcome {
 export interface Component {
   id: string;
   type: ComponentType;
-  content: any;
+  content: Record<string, unknown>;
   style?: ComponentStyle;
   conditions?: ComponentCondition[];
   writtenResponse?: WrittenResponseConfig;
@@ -317,8 +344,8 @@ export interface ComponentProperties {
   title?: string;
   text?: string;
   placeholder?: string;
-  options?: Array<{ id: string; label: string; value?: any }>;
-  [key: string]: any;
+  options?: Array<{ id: string; label: string; value?: string | number | boolean }>;
+  [key: string]: unknown;
 }
 
 export interface WrittenResponseConfig {
@@ -335,7 +362,7 @@ export interface ComponentStyle {
   backgroundColor?: string;
   textColor?: string;
   fontSize?: string;
-  fontFamily?: string;
+  fontWeight?: string;
   padding?: string;
   margin?: string;
   borderRadius?: string;
@@ -362,7 +389,7 @@ export interface ComponentCondition {
   type: 'show_if' | 'hide_if';
   field: string;
   operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than';
-  value: any;
+  value: string | number | boolean;
 }
 
 // Sistema de etapas
@@ -393,8 +420,8 @@ export interface FlowCondition {
   type: 'response' | 'score' | 'tag' | 'calculation';
   field: string;
   operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than' | 'between';
-  value: any;
-  secondValue?: any; // for 'between' operator
+  value: string | number | boolean;
+  secondValue?: string | number | boolean; // for 'between' operator
 }
 
 // Fluxo visual
@@ -419,7 +446,7 @@ export interface FlowEdge {
   target: string;
   label?: string;
   type?: 'default' | 'conditional' | 'calculation';
-  style?: any;
+  style?: Record<string, string | number>;
   data?: {
     condition?: FlowCondition;
     color?: string;
@@ -487,12 +514,12 @@ export interface UserPersona {
   age?: number;
   interests: string[];
   behavior: 'careful' | 'quick' | 'thorough' | 'random';
-  responses: Record<string, any>;
+  responses: Record<string, string | number | boolean | string[]>;
 }
 
 export interface SimulationResult {
   stepId: string;
-  response: any;
+  response: string | number | boolean | string[];
   score: number;
   path: string[];
   timestamp: number;
@@ -505,7 +532,12 @@ export interface FlowSuggestion {
   description: string;
   impact: 'low' | 'medium' | 'high';
   confidence: number;
-  suggestion: any;
+  suggestion: {
+    title: string;
+    description: string;
+    action: string;
+    data?: Record<string, unknown>;
+  };
 }
 
 export interface CustomEvent {
@@ -569,7 +601,7 @@ export interface Quiz {
   description?: string;
   status: 'draft' | 'published' | 'archived';
   theme?: QuizTheme;
-  settings?: any;
+  settings?: Record<string, unknown>;
   steps?: QuizStep[]; // Novo sistema de etapas
   questions: Question[]; // Manter compatibilidade com sistema antigo
   outcomes?: Record<string, QuizOutcome>;
@@ -599,7 +631,7 @@ export interface QuizFlow {
 
 export interface QuizAnswer {
   questionId: string;
-  value: any;
+  value: string | number;
 }
 
 export interface Result {
@@ -610,7 +642,7 @@ export interface Result {
   score?: number;
   outcomeKey?: string;
   utm?: Record<string, string>;
-  meta?: any;
+  meta?: Record<string, unknown>;
   answers: QuizAnswer[];
 }
 
@@ -622,6 +654,6 @@ export interface Lead {
   email?: string;
   phone?: string;
   tags?: string[];
-  customFields?: any;
+  customFields?: Record<string, unknown>;
   createdAt: string;
 }

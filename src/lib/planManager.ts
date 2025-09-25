@@ -1,342 +1,206 @@
-import { UserPlan, PlanLimits, PlanFeatures, PLAN_LIMITS, PLAN_INFO } from '@/types/user';
-import { DemoUserManager } from './demoUser';
-import { localDB } from './localStorage';
+export type PlanType = 'starter' | 'pro' | 'premium';
+
+export interface PlanLimits {
+  maxQuizzes: number;
+  maxQuestionsPerQuiz: number;
+  maxResponsesPerMonth: number;
+  customBranding: boolean;
+  analytics: boolean;
+  webhooks: boolean;
+  pixelTracking: boolean;
+  exportData: boolean;
+  prioritySupport: boolean;
+  customDomains: boolean;
+}
+
+export interface Plan {
+  id: PlanType;
+  name: string;
+  description: string;
+  price: {
+    monthly: number;
+    yearly: number;
+  };
+  limits: PlanLimits;
+  features: string[];
+}
+
+export const PLANS: Record<PlanType, Plan> = {
+  starter: {
+    id: 'starter',
+    name: 'Starter',
+    description: 'Perfeito para começar',
+    price: {
+      monthly: 0,
+      yearly: 0,
+    },
+    limits: {
+      maxQuizzes: 3,
+      maxQuestionsPerQuiz: 10,
+      maxResponsesPerMonth: 100,
+      customBranding: false,
+      analytics: false,
+      webhooks: false,
+      pixelTracking: false,
+      exportData: false,
+      prioritySupport: false,
+      customDomains: false,
+    },
+    features: [
+      'Até 3 quizzes',
+      'Até 10 perguntas por quiz',
+      '100 respostas por mês',
+      'Templates básicos',
+      'Suporte por email',
+    ],
+  },
+  pro: {
+    id: 'pro',
+    name: 'Pro',
+    description: 'Para profissionais e pequenas empresas',
+    price: {
+      monthly: 29,
+      yearly: 290, // 2 meses grátis
+    },
+    limits: {
+      maxQuizzes: 25,
+      maxQuestionsPerQuiz: 50,
+      maxResponsesPerMonth: 2500,
+      customBranding: true,
+      analytics: true,
+      webhooks: true,
+      pixelTracking: true,
+      exportData: true,
+      prioritySupport: false,
+      customDomains: false,
+    },
+    features: [
+      'Até 25 quizzes',
+      'Até 50 perguntas por quiz',
+      '2.500 respostas por mês',
+      'Analytics avançados',
+      'Branding personalizado',
+      'Webhooks',
+      'Pixel tracking',
+      'Exportar dados',
+      'Templates premium',
+    ],
+    },
+  premium: {
+    id: 'premium',
+    name: 'Premium',
+    description: 'Para empresas e agências',
+    price: {
+      monthly: 99,
+      yearly: 990, // 2 meses grátis
+    },
+    limits: {
+      maxQuizzes: -1, // Ilimitado
+      maxQuestionsPerQuiz: -1, // Ilimitado
+      maxResponsesPerMonth: -1, // Ilimitado
+      customBranding: true,
+      analytics: true,
+      webhooks: true,
+      pixelTracking: true,
+      exportData: true,
+      prioritySupport: true,
+      customDomains: true,
+    },
+    features: [
+      'Quizzes ilimitados',
+      'Perguntas ilimitadas',
+      'Respostas ilimitadas',
+      'Analytics avançados',
+      'Branding personalizado',
+      'Webhooks avançados',
+      'Pixel tracking',
+      'Exportar dados',
+      'Suporte prioritário',
+      'Domínios personalizados',
+      'API completa',
+      'Integrações avançadas',
+    ],
+  },
+};
 
 export class PlanManager {
-  /**
-   * Get current user's plan limits
-   */
-  static getCurrentPlanLimits(): PlanLimits {
-    const user = DemoUserManager.getCurrentUser();
-    const plan = user?.plan || 'free';
-    return PLAN_LIMITS[plan];
+  static getPlan(planType: PlanType): Plan {
+    return PLANS[planType];
   }
 
-  /**
-   * Get current user's plan features
-   */
-  static getCurrentPlanFeatures(): PlanFeatures {
-    return this.getCurrentPlanLimits().features;
+  static canCreateQuiz(currentPlan: PlanType, currentQuizCount: number): boolean {
+    const plan = this.getPlan(currentPlan);
+    return plan.limits.maxQuizzes === -1 || currentQuizCount < plan.limits.maxQuizzes;
   }
 
-  /**
-   * Check if user can perform an action based on plan limits
-   */
-  static canCreateQuiz(): { allowed: boolean; reason?: string; limit?: number } {
-    const limits = this.getCurrentPlanLimits();
-    const currentQuizzes = localDB.getAllQuizzes().length;
-
-    if (limits.maxQuizzes === -1) {
-      return { allowed: true };
-    }
-
-    if (currentQuizzes >= limits.maxQuizzes) {
-      return {
-        allowed: false,
-        reason: `Limite de ${limits.maxQuizzes} quizzes atingido`,
-        limit: limits.maxQuizzes
-      };
-    }
-
-    return { allowed: true };
+  static canAddQuestion(currentPlan: PlanType, currentQuestionCount: number): boolean {
+    const plan = this.getPlan(currentPlan);
+    return plan.limits.maxQuestionsPerQuiz === -1 || currentQuestionCount < plan.limits.maxQuestionsPerQuiz;
   }
 
-  /**
-   * Check if user can add questions to a quiz
-   */
-  static canAddQuestion(currentQuestionCount: number): { allowed: boolean; reason?: string; limit?: number } {
-    const limits = this.getCurrentPlanLimits();
-
-    if (limits.maxQuestionsPerQuiz === -1) {
-      return { allowed: true };
-    }
-
-    if (currentQuestionCount >= limits.maxQuestionsPerQuiz) {
-      return {
-        allowed: false,
-        reason: `Limite de ${limits.maxQuestionsPerQuiz} perguntas por quiz atingido`,
-        limit: limits.maxQuestionsPerQuiz
-      };
-    }
-
-    return { allowed: true };
+  static canReceiveResponse(currentPlan: PlanType, monthlyResponseCount: number): boolean {
+    const plan = this.getPlan(currentPlan);
+    return plan.limits.maxResponsesPerMonth === -1 || monthlyResponseCount < plan.limits.maxResponsesPerMonth;
   }
 
-  /**
-   * Check if user can access a specific feature
-   */
-  static hasFeature(feature: keyof PlanFeatures): boolean {
-    const features = this.getCurrentPlanFeatures();
-    return features[feature];
+  static hasFeature(currentPlan: PlanType, feature: keyof PlanLimits): boolean {
+    const plan = this.getPlan(currentPlan);
+    return plan.limits[feature] === true;
   }
 
-  /**
-   * Get usage statistics for current user
-   */
-  static getUsageStats(): {
-    quizzes: { current: number; limit: number; percentage: number };
-    storage: { current: number; limit: number; percentage: number };
-    responses: { current: number; limit: number; percentage: number };
-  } {
-    const limits = this.getCurrentPlanLimits();
-    const quizzes = localDB.getAllQuizzes();
-    const results = this.getResults();
-    const storageInfo = localDB.getStorageUsage();
+  static getUsagePercentage(currentPlan: PlanType, currentUsage: number, limitType: 'quizzes' | 'questions' | 'responses'): number {
+    const plan = this.getPlan(currentPlan);
+    let limit: number;
 
-    // Calculate responses this month
-    const thisMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
-    const monthlyResponses = results.filter((r: any) => 
-      r.createdAt?.startsWith(thisMonth)
-    ).length;
+    switch (limitType) {
+      case 'quizzes':
+        limit = plan.limits.maxQuizzes;
+        break;
+      case 'questions':
+        limit = plan.limits.maxQuestionsPerQuiz;
+        break;
+      case 'responses':
+        limit = plan.limits.maxResponsesPerMonth;
+        break;
+      default:
+        return 0;
+    }
 
-    return {
-      quizzes: {
-        current: quizzes.length,
-        limit: limits.maxQuizzes,
-        percentage: limits.maxQuizzes === -1 ? 0 : (quizzes.length / limits.maxQuizzes) * 100
-      },
-      storage: {
-        current: storageInfo.used,
-        limit: limits.maxStorageBytes,
-        percentage: limits.maxStorageBytes === -1 ? 0 : (storageInfo.used / limits.maxStorageBytes) * 100
-      },
-      responses: {
-        current: monthlyResponses,
-        limit: limits.maxResponsesPerMonth,
-        percentage: limits.maxResponsesPerMonth === -1 ? 0 : (monthlyResponses / limits.maxResponsesPerMonth) * 100
-      }
-    };
+    if (limit === -1) return 0; // Ilimitado
+    return Math.min((currentUsage / limit) * 100, 100);
   }
 
-  /**
-   * Get plan recommendations based on usage
-   */
-  static getPlanRecommendation(): { 
-    shouldUpgrade: boolean; 
-    recommendedPlan?: UserPlan; 
-    reasons: string[] 
-  } {
-    const currentUser = DemoUserManager.getCurrentUser();
-    const currentPlan = currentUser?.plan || 'free';
-    const usage = this.getUsageStats();
-    const reasons: string[] = [];
-
-    // Don't recommend upgrade if already on premium
-    if (currentPlan === 'premium') {
-      return { shouldUpgrade: false, reasons: [] };
-    }
-
-    // Check if approaching limits
-    if (usage.quizzes.percentage > 80) {
-      reasons.push(`Você está usando ${Math.round(usage.quizzes.percentage)}% do limite de quizzes`);
-    }
-
-    if (usage.responses.percentage > 80) {
-      reasons.push(`Você está usando ${Math.round(usage.responses.percentage)}% do limite de respostas mensais`);
-    }
-
-    if (usage.storage.percentage > 80) {
-      reasons.push(`Você está usando ${Math.round(usage.storage.percentage)}% do armazenamento`);
-    }
-
-    // High usage patterns
-    const totalLeads = localDB.getAllLeads().length;
-    if (totalLeads > 50 && currentPlan === 'free') {
-      reasons.push('Você tem muitos leads e pode se beneficiar de recursos avançados');
-    }
-
-    // Recommend based on current plan and usage
-    if (reasons.length > 0) {
-      return {
-        shouldUpgrade: true,
-        recommendedPlan: currentPlan === 'free' ? 'pro' : 'premium',
-        reasons
-      };
-    }
-
-    return { shouldUpgrade: false, reasons: [] };
-  }
-
-  /**
-   * Simulate plan upgrade (for demo purposes)
-   */
-  static upgradePlan(newPlan: UserPlan): boolean {
-    try {
-      DemoUserManager.upgradePlan(newPlan);
-      
-      // Log the upgrade
-      this.logPlanEvent('upgrade', newPlan);
-      
-      return true;
-    } catch (error) {
-      console.error('Failed to upgrade plan:', error);
-      return false;
+  static getNextPlan(currentPlan: PlanType): PlanType | null {
+    switch (currentPlan) {
+      case 'starter':
+        return 'pro';
+      case 'pro':
+        return 'premium';
+      case 'premium':
+        return null; // Já é o plano mais alto
+      default:
+        return null;
     }
   }
 
-  /**
-   * Get plan comparison data
-   */
-  static getPlanComparison(): Array<{
-    feature: string;
-    free: boolean | string;
-    pro: boolean | string;
-    premium: boolean | string;
-  }> {
-    return [
-      {
-        feature: 'Quizzes',
-        free: '3 quizzes',
-        pro: '50 quizzes',
-        premium: 'Ilimitado'
-      },
-      {
-        feature: 'Perguntas por quiz',
-        free: '10 perguntas',
-        pro: '50 perguntas',
-        premium: 'Ilimitado'
-      },
-      {
-        feature: 'Respostas mensais',
-        free: '100 respostas',
-        pro: '10.000 respostas',
-        premium: 'Ilimitado'
-      },
-      {
-        feature: 'Analytics avançado',
-        free: false,
-        pro: true,
-        premium: true
-      },
-      {
-        feature: 'Temas personalizados',
-        free: false,
-        pro: true,
-        premium: true
-      },
-      {
-        feature: 'Integrações',
-        free: false,
-        pro: true,
-        premium: true
-      },
-      {
-        feature: 'Testes A/B',
-        free: false,
-        pro: true,
-        premium: true
-      },
-      {
-        feature: 'Marca personalizada',
-        free: false,
-        pro: false,
-        premium: true
-      },
-      {
-        feature: 'Suporte dedicado',
-        free: false,
-        pro: false,
-        premium: true
-      }
-    ];
+  static formatPrice(price: number): string {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(price);
   }
 
-  /**
-   * Log plan-related events (for analytics)
-   */
-  private static logPlanEvent(event: string, plan: UserPlan, metadata?: any): void {
-    const logEntry = {
-      event,
-      plan,
-      timestamp: new Date().toISOString(),
-      metadata
-    };
-
-    // In a real app, this would go to analytics service
-    console.log('Plan Event:', logEntry);
-    
-    // Store in localStorage for demo purposes
-    try {
-      const logs = JSON.parse(localStorage.getItem('elevado_plan_logs') || '[]');
-      logs.push(logEntry);
-      // Keep only last 100 entries
-      if (logs.length > 100) {
-        logs.splice(0, logs.length - 100);
-      }
-      localStorage.setItem('elevado_plan_logs', JSON.stringify(logs));
-    } catch (error) {
-      console.error('Failed to log plan event:', error);
-    }
-  }
-
-  /**
-   * Get plan usage warnings
-   */
-  static getUsageWarnings(): Array<{
-    type: 'warning' | 'error';
-    message: string;
-    action?: string;
-  }> {
-    const usage = this.getUsageStats();
-    const warnings: Array<{ type: 'warning' | 'error'; message: string; action?: string }> = [];
-
-    // Quiz limit warnings
-    if (usage.quizzes.percentage >= 100) {
-      warnings.push({
-        type: 'error',
-        message: 'Você atingiu o limite de quizzes do seu plano',
-        action: 'upgrade'
-      });
-    } else if (usage.quizzes.percentage >= 80) {
-      warnings.push({
-        type: 'warning',
-        message: `Você está usando ${Math.round(usage.quizzes.percentage)}% do limite de quizzes`,
-        action: 'upgrade'
-      });
-    }
-
-    // Storage warnings
-    if (usage.storage.percentage >= 100) {
-      warnings.push({
-        type: 'error',
-        message: 'Seu armazenamento está cheio',
-        action: 'upgrade'
-      });
-    } else if (usage.storage.percentage >= 80) {
-      warnings.push({
-        type: 'warning',
-        message: `Você está usando ${Math.round(usage.storage.percentage)}% do armazenamento`,
-        action: 'cleanup'
-      });
-    }
-
-    // Response warnings
-    if (usage.responses.percentage >= 100) {
-      warnings.push({
-        type: 'error',
-        message: 'Você atingiu o limite de respostas mensais',
-        action: 'upgrade'
-      });
-    } else if (usage.responses.percentage >= 80) {
-      warnings.push({
-        type: 'warning',
-        message: `Você está usando ${Math.round(usage.responses.percentage)}% das respostas mensais`,
-        action: 'upgrade'
-      });
-    }
-
-    return warnings;
-  }
-
-  /**
-   * Get results from localStorage
-   */
-  private static getResults(): any[] {
-    try {
-      const data = localStorage.getItem('elevado_results');
-      return data ? JSON.parse(data) : [];
-    } catch {
-      return [];
-    }
+  static calculateYearlySavings(planType: PlanType): number {
+    const plan = this.getPlan(planType);
+    const monthlyTotal = plan.price.monthly * 12;
+    return monthlyTotal - plan.price.yearly;
   }
 }
+
+// Hook para usar o sistema de planos
+export const usePlanManager = () => {
+  return {
+    PLANS,
+    PlanManager,
+  };
+};

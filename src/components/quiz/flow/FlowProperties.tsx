@@ -5,7 +5,7 @@ import { Settings, Workflow, BarChart3 } from 'lucide-react';
 
 interface FlowPropertiesProps {
   quiz: Quiz;
-  selectedNode?: any;
+  selectedNode?: Record<string, unknown>;
   onUpdate: (quiz: Quiz) => void;
 }
 

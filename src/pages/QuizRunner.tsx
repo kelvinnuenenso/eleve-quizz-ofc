@@ -36,8 +36,8 @@ const QuizRunner = () => {
   const [stepStartTime, setStepStartTime] = useState<number>(Date.now());
   const [userAnswerTimes, setUserAnswerTimes] = useState<number[]>([]);
   const [answeredStepsCount, setAnsweredStepsCount] = useState(0);
-  const [achievements, setAchievements] = useState<any[]>([]);
-  const [showAchievement, setShowAchievement] = useState<any>(null);
+  const [achievements, setAchievements] = useState<Record<string, unknown>[]>([]);
+  const [showAchievement, setShowAchievement] = useState<Record<string, unknown> | null>(null);
   const [showSplash, setShowSplash] = useState(isMobile);
   const [dataReady, setDataReady] = useState(false);
   const [showGestureHint, setShowGestureHint] = useState(isMobile && !localStorage.getItem('gesture-hint-shown'));
@@ -98,7 +98,7 @@ const QuizRunner = () => {
           // Initialize pixel system with quiz settings
           const pixelSettings = loadedQuiz.pixelSettings || {};
           const allUTMs = { ...utmParams, ...realPixelSystem.getPersistedUTMParameters() };
-          realPixelSystem.initialize(pixelSettings as any, allUTMs);
+          realPixelSystem.initialize(pixelSettings as Record<string, unknown>, allUTMs);
           
           // Initialize analytics session
           const newSessionId = realAnalytics.initializeSession(loadedQuiz, allUTMs);
@@ -181,7 +181,7 @@ const QuizRunner = () => {
   const currentQuestion = quiz?.questions?.[currentStep];
   const progress = quiz?.questions?.length ? (answeredStepsCount / quiz.questions.length) * 100 : 0;
 
-  const handleAnswer = async (value: any) => {
+  const handleAnswer = async (value: string | number | boolean | string[]) => {
     if (!currentQuestion || !quiz) return;
     
     // Calculate time spent on this step

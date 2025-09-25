@@ -111,7 +111,7 @@ export function DesignSystemManager({ theme, onUpdate, quizId }: DesignSystemMan
     },
   });
 
-  const handleThemeUpdate = (newConfig: any) => {
+  const handleThemeUpdate = (newConfig: Record<string, unknown>) => {
     // Converter de volta para QuizTheme
     const updatedTheme: QuizTheme = {
       ...theme,
@@ -128,7 +128,7 @@ export function DesignSystemManager({ theme, onUpdate, quizId }: DesignSystemMan
     onUpdate(updatedTheme);
   };
 
-  const handleBrandingUpdate = (brandingConfig: any) => {
+  const handleBrandingUpdate = (brandingConfig: Record<string, unknown>) => {
     const updatedTheme: QuizTheme = {
       ...theme,
       logo: brandingConfig.logo?.file || theme.logo,

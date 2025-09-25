@@ -150,7 +150,7 @@ function ComponentPreview({ component }: { component: Component }) {
             </p>
           )}
           <div className="space-y-2">
-            {(content?.options || []).map((option: any, index: number) => (
+            {(content?.options || []).map((option: Record<string, unknown>, index: number) => (
               <label key={option.id || index} 
                 className="flex items-center gap-2 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
                 <input 

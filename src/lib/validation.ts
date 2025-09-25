@@ -1,118 +1,229 @@
 import { z } from 'zod';
 
-// Quiz validation schema
-export const QuizSchema = z.object({
-  id: z.string(),
-  publicId: z.string(),
-  name: z.string().min(1, 'Nome é obrigatório'),
-  description: z.string().optional(),
-  status: z.enum(['draft', 'published']),
-  userId: z.string().optional(),
-  questions: z.array(z.object({
-    id: z.string(),
-    idx: z.number(),
-    type: z.enum(['single', 'multiple', 'nps', 'slider', 'phone', 'rating', 'email', 'short_text']),
-    title: z.string().min(1, 'Título da pergunta é obrigatório'),
-    description: z.string().optional(),
-    options: z.array(z.object({
-      id: z.string(),
-      label: z.string(),
-      score: z.number().optional()
-    })).optional(),
-    required: z.boolean().optional(),
-    settings: z.record(z.any()).optional(),
-    score_weight: z.number().optional()
-  })),
-  theme: z.object({
-    primary: z.string().optional(),
-    background: z.string().optional(),
-    text: z.string().optional(),
-    borderRadius: z.string().optional(),
-    fontFamily: z.string().optional()
-  }).optional(),
-  outcomes: z.record(z.object({
-    title: z.string(),
-    description: z.string(),
-    cta: z.object({
-      label: z.string(),
-      href: z.string()
-    }).optional()
-  })).optional(),
-  settings: z.record(z.any()).optional(),
-  createdAt: z.string(),
-  updatedAt: z.string()
+// ===== SCHEMAS BÁSICOS =====
+
+export const QuestionTypeSchema = z.enum([
+  'single',
+  'multiple', 
+  'rating',
+  'nps',
+  'slider',
+  'short_text',
+  'long_text',
+  'email',
+  'phone',
+  'date',
+  'file',
+  'consent',
+  'cta'
+]);
+
+export const QuizStatusSchema = z.enum(['draft', 'published', 'archived']);
+
+export const PlanTypeSchema = z.enum(['free', 'basic', 'premium', 'enterprise']);
+
+// ===== QUESTION SCHEMAS =====
+
+export const QuestionOptionSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string().min(1, 'Label é obrigatório'),
+  value: z.string().optional(),
+  score: z.number().optional()
 });
 
-// Result validation schema
+export const QuestionLogicSchema = z.object({
+  showIf: z.array(z.object({
+    questionId: z.string().uuid(),
+    operator: z.enum(['equals', 'not_equals', 'contains', 'greater_than', 'less_than']),
+    value: z.union([z.string(), z.number(), z.boolean()])
+  })).optional(),
+  skipIf: z.array(z.object({
+    questionId: z.string().uuid(),
+    operator: z.enum(['equals', 'not_equals', 'contains', 'greater_than', 'less_than']),
+    value: z.union([z.string(), z.number(), z.boolean()])
+  })).optional()
+});
+
+export const QuestionSchema = z.object({
+  id: z.string().uuid(),
+  idx: z.number().min(0),
+  type: QuestionTypeSchema,
+  title: z.string().min(1, 'Título é obrigatório'),
+  description: z.string().optional(),
+  options: z.array(QuestionOptionSchema).optional(),
+  required: z.boolean().default(false),
+  logic: QuestionLogicSchema.optional(),
+  score_weight: z.number().min(0).max(100).optional(),
+  settings: z.record(z.unknown()).optional()
+});
+
+// ===== QUIZ SCHEMAS =====
+
+export const QuizThemeSchema = z.object({
+  primary: z.string().regex(/^#[0-9A-F]{6}$/i, 'Cor primária deve ser um hex válido').optional(),
+  background: z.string().regex(/^#[0-9A-F]{6}$/i, 'Cor de fundo deve ser um hex válido').optional(),
+  text: z.string().regex(/^#[0-9A-F]{6}$/i, 'Cor do texto deve ser um hex válido').optional(),
+  accent: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
+  cardBackground: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
+  borderRadius: z.string().optional(),
+  fontFamily: z.string().optional(),
+  fontSize: z.string().optional(),
+  buttonStyle: z.string().optional(),
+  maxWidth: z.string().optional(),
+  gradient: z.boolean().optional(),
+  showProgress: z.boolean().optional(),
+  showQuestionNumbers: z.boolean().optional(),
+  centerAlign: z.boolean().optional()
+});
+
+export const QuizOutcomeSchema = z.object({
+  title: z.string().min(1, 'Título é obrigatório'),
+  description: z.string().min(1, 'Descrição é obrigatória'),
+  cta: z.object({
+    label: z.string().min(1),
+    href: z.string().url('URL deve ser válida')
+  }).optional(),
+  scoreRange: z.object({
+    min: z.number().min(0),
+    max: z.number().min(0)
+  }).optional(),
+  color: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
+  icon: z.string().optional(),
+  redirectUrl: z.string().url().optional()
+});
+
+// Quiz validation schema (atualizado)
+export const QuizSchema = z.object({
+  id: z.string().uuid(),
+  publicId: z.string().min(1, 'ID público é obrigatório'),
+  name: z.string().min(1, 'Nome é obrigatório').max(100, 'Nome deve ter no máximo 100 caracteres'),
+  description: z.string().max(500, 'Descrição deve ter no máximo 500 caracteres').optional(),
+  status: QuizStatusSchema,
+  userId: z.string().uuid().optional(),
+  theme: QuizThemeSchema.optional(),
+  settings: z.record(z.unknown()).optional(),
+  questions: z.array(QuestionSchema).min(1, 'Quiz deve ter pelo menos uma pergunta'),
+  outcomes: z.record(QuizOutcomeSchema).optional(),
+  pixelSettings: z.record(z.unknown()).optional(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime()
+});
+
+// ===== RESPONSE SCHEMAS =====
+
+export const QuizAnswerSchema = z.object({
+  questionId: z.string().uuid(),
+  value: z.union([z.string(), z.number()])
+});
+
+// Result validation schema (atualizado)
 export const ResultSchema = z.object({
-  id: z.string(),
-  quizId: z.string(),
-  userId: z.string().optional(),
-  startedAt: z.string(),
-  completedAt: z.string().optional(),
-  score: z.number(),
-  answers: z.array(z.object({
-    questionId: z.string(),
-    value: z.any()
-  })),
+  id: z.string().uuid(),
+  quizId: z.string().uuid(),
+  userId: z.string().uuid().optional(),
+  startedAt: z.string().datetime(),
+  completedAt: z.string().datetime().optional(),
+  score: z.number().min(0),
+  answers: z.array(QuizAnswerSchema),
   outcomeKey: z.string().optional(),
   utm: z.record(z.string()).optional(),
-  meta: z.record(z.any()).optional()
+  meta: z.record(z.unknown()).optional()
 });
 
-// Validation helper functions
+// ===== VALIDATION FUNCTIONS =====
+
+/**
+ * Valida um quiz completo
+ */
 export const validateQuiz = (quiz: any) => {
-  try {
-    return QuizSchema.parse(quiz);
-  } catch (error) {
-    console.error('Quiz validation failed:', error);
-    throw new Error('Dados do quiz inválidos');
+  const result = QuizSchema.safeParse(quiz);
+  if (!result.success) {
+    console.error('Quiz validation failed:', result.error.issues);
+    return { success: false, errors: result.error.issues };
   }
+  return { success: true, data: result.data };
 };
 
+/**
+ * Valida uma resposta de quiz
+ */
 export const validateResult = (result: any) => {
-  try {
-    return ResultSchema.parse(result);
-  } catch (error) {
-    console.error('Result validation failed:', error);
-    throw new Error('Dados do resultado inválidos');
+  const validationResult = ResultSchema.safeParse(result);
+  if (!validationResult.success) {
+    console.error('Result validation failed:', validationResult.error.issues);
+    return { success: false, errors: validationResult.error.issues };
   }
+  return { success: true, data: validationResult.data };
 };
 
-// Safe data retrieval helpers
-export const safeGetQuizData = (data: any) => {
-  if (!data) return null;
+/**
+ * Valida uma pergunta
+ */
+export const validateQuestion = (question: any) => {
+  const result = QuestionSchema.safeParse(question);
+  if (!result.success) {
+    console.error('Question validation failed:', result.error.issues);
+    return { success: false, errors: result.error.issues };
+  }
+  return { success: true, data: result.data };
+};
+
+// ===== ERROR HANDLING =====
+
+export class ValidationError extends Error {
+  public issues: z.ZodIssue[];
   
-  // Provide safe defaults
-  return {
-    id: data.id || '',
-    publicId: data.public_id || data.publicId || '',
-    name: data.name || 'Quiz sem nome',
-    description: data.description || '',
-    status: data.status || 'draft',
-    userId: data.user_id || data.userId,
-    questions: Array.isArray(data.questions) ? data.questions : [],
-    theme: data.theme || { primary: '#2563EB', background: '#FFFFFF', text: '#0B0B0B' },
-    outcomes: data.outcomes || {},
-    settings: data.settings || {},
-    createdAt: data.created_at || data.createdAt || new Date().toISOString(),
-    updatedAt: data.updated_at || data.updatedAt || new Date().toISOString()
-  };
+  constructor(issues: z.ZodIssue[]) {
+    const message = issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ');
+    super(`Validation failed: ${message}`);
+    this.name = 'ValidationError';
+    this.issues = issues;
+  }
+}
+
+/**
+ * Valida dados e lança erro se inválido
+ */
+export const validateOrThrow = <T>(schema: z.ZodSchema<T>, data: unknown): T => {
+  const result = schema.safeParse(data);
+  if (!result.success) {
+    throw new ValidationError(result.error.issues);
+  }
+  return result.data;
+};
+
+// ===== LEGACY FUNCTIONS (mantidas para compatibilidade) =====
+
+export const safeGetQuizData = (data: any) => {
+  try {
+    const validatedData = QuizSchema.parse(data);
+    return {
+      success: true,
+      data: validatedData
+    };
+  } catch (error) {
+    console.error('Quiz data validation failed:', error);
+    return {
+      success: false,
+      error: error instanceof z.ZodError ? error.issues : 'Unknown validation error',
+      data: null
+    };
+  }
 };
 
 export const safeGetResultData = (data: any) => {
-  if (!data) return null;
-  
-  return {
-    id: data.id || '',
-    quizId: data.quiz_id || data.quizId || '',
-    userId: data.user_id || data.userId,
-    startedAt: data.started_at || data.startedAt || new Date().toISOString(),
-    completedAt: data.completed_at || data.completedAt,
-    score: typeof data.score === 'number' ? data.score : 0,
-    answers: Array.isArray(data.answers) ? data.answers : [],
-    outcomeKey: data.outcome_key || data.outcomeKey,
-    utm: data.utm || {},
-    meta: data.meta || {}
-  };
+  try {
+    const validatedData = ResultSchema.parse(data);
+    return {
+      success: true,
+      data: validatedData
+    };
+  } catch (error) {
+    console.error('Result data validation failed:', error);
+    return {
+      success: false,
+      error: error instanceof z.ZodError ? error.issues : 'Unknown validation error',
+      data: null
+    };
+  }
 };

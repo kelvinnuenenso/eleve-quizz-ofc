@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Check, Crown, Star, Zap } from 'lucide-react';
 import { DemoUserManager } from '@/lib/demoUser';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 interface PlanUpgradeModalProps {
   isOpen: boolean;

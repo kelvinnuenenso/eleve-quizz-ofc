@@ -126,7 +126,7 @@ export const SEOManager = ({ quiz, onUpdate }: SEOManagerProps) => {
     return 'Precisa Melhorar';
   };
 
-  const updateSEOData = (field: string, value: any) => {
+  const updateSEOData = (field: string, value: unknown) => {
     setSeoData(prev => ({
       ...prev,
       [field]: value

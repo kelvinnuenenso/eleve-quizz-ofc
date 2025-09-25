@@ -58,11 +58,11 @@ export function MicroRewards({ theme, onUpdate, quizId }: MicroRewardsProps) {
     handleUpdate({ [`microRewards${key.charAt(0).toUpperCase() + key.slice(1)}`]: value });
   };
 
-  const updateSoundFeedback = (key: string, value: any) => {
+  const updateSoundFeedback = (key: string, value: unknown) => {
     handleUpdate({ [`microRewardsSound${key.charAt(0).toUpperCase() + key.slice(1)}`]: value });
   };
 
-  const updateFinalScore = (key: string, value: any) => {
+  const updateFinalScore = (key: string, value: unknown) => {
     handleUpdate({ [`microRewards${key.charAt(0).toUpperCase() + key.slice(1)}`]: value });
   };
 

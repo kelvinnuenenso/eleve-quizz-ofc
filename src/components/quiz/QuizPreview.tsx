@@ -25,7 +25,7 @@ const QuizPreview = ({ quiz, onClose }: QuizPreviewProps) => {
   const progress = ((currentStep + 1) / quiz.questions.length) * 100;
   const isLastQuestion = currentStep === quiz.questions.length - 1;
 
-  const handleAnswer = (value: any) => {
+  const handleAnswer = (value: unknown) => {
     const newAnswers = [
       ...answers,
       { questionId: currentQuestion.id, value }

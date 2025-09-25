@@ -316,7 +316,7 @@ const templates: QuizTemplate[] = [
 ];
 
 interface QuizTemplatesProps {
-  onSelectTemplate: (template: any) => void;
+  onSelectTemplate: (template: Record<string, unknown>) => void;
 }
 
 const QuizTemplates = ({ onSelectTemplate }: QuizTemplatesProps) => {

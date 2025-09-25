@@ -218,7 +218,7 @@ export function RealQuizPreview({ quiz, activeStepId, className = '' }: RealQuiz
             )}
 
             <div className="space-y-3">
-              {(content?.options || []).map((option: any, optIndex: number) => {
+              {(content?.options || []).map((option: Record<string, unknown>, optIndex: number) => {
                 const isSelected = selectedOptions.includes(option.id);
                 return (
                   <Button

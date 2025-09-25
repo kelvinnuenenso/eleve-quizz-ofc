@@ -12,8 +12,8 @@ import {
 
 interface FlowToolbarProps {
   onAddNode: (type: 'step' | 'condition' | 'outcome' | 'calculation') => void;
-  selectedNode?: any;
-  onUpdateNode: (updates: any) => void;
+  selectedNode?: Record<string, unknown>;
+  onUpdateNode: (updates: Record<string, unknown>) => void;
   onDeleteNode: () => void;
 }
 

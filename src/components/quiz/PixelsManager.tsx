@@ -7,10 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/simple-tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Facebook, Link, Code2, Info, Plus, Trash2 } from 'lucide-react';
+import { Facebook, Link, Info, Plus, Trash2 } from 'lucide-react';
 
 export interface CustomEvent {
   id: string;
@@ -37,11 +37,6 @@ export interface PixelSettings {
     enabled: boolean;
     code: string;
   };
-  custom?: {
-    enabled: boolean;
-    code: string;
-    name?: string;
-  };
 }
 
 interface PixelsManagerProps {
@@ -55,7 +50,7 @@ export const PixelsManager = ({ pixelSettings, onUpdate, quizPublicId }: PixelsM
   const isMobile = useIsMobile();
   const [settings, setSettings] = useState<PixelSettings>(pixelSettings || {});
 
-  const updateSettings = (section: keyof PixelSettings, updates: any) => {
+  const updateSettings = (section: keyof PixelSettings, updates: Record<string, unknown>) => {
     const newSettings = {
       ...settings,
       [section]: {
@@ -254,16 +249,14 @@ export const PixelsManager = ({ pixelSettings, onUpdate, quizPublicId }: PixelsM
             <div className="flex items-center gap-2 mb-2">
               <label className="text-sm font-medium">ID do Pixel do Facebook</label>
               {!isMobile && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="w-4 h-4 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Encontre seu ID do pixel no Gerenciador de Eventos do Facebook</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="w-4 h-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Encontre seu ID do pixel no Gerenciador de Eventos do Facebook</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
             <Input
@@ -330,16 +323,14 @@ export const PixelsManager = ({ pixelSettings, onUpdate, quizPublicId }: PixelsM
                             <label htmlFor={event.name} className="text-sm font-medium">
                               {event.label}
                             </label>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <Info className="w-3 h-3 text-muted-foreground" />
-                                </TooltipTrigger>
-                                <TooltipContent className="max-w-xs">
-                                  <p className="text-xs">{event.description}</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Info className="w-3 h-3 text-muted-foreground" />
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-xs">{event.description}</p>
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
                           <p className="text-xs text-muted-foreground">
                             <span className="font-medium">Disparo:</span> {event.trigger}
@@ -545,16 +536,14 @@ export const PixelsManager = ({ pixelSettings, onUpdate, quizPublicId }: PixelsM
             <div className="flex items-center gap-2 mb-2">
               <label className="text-sm font-medium">Código do UTMify</label>
               {!isMobile && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="w-4 h-4 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Cole aqui o código completo do UTMify para adicionar UTMs automaticamente</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="w-4 h-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Cole aqui o código de rastreamento do UTMify</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
             <Textarea
@@ -569,81 +558,7 @@ export const PixelsManager = ({ pixelSettings, onUpdate, quizPublicId }: PixelsM
         </div>
       </Card>
 
-      {/* Custom Pixel */}
-      <Card className={isMobile ? 'p-3' : 'p-6'}>
-        <div className={`flex items-center justify-between ${isMobile ? 'mb-3' : 'mb-4'}`}>
-          <div className="flex items-center gap-3">
-            <div className={`bg-purple-100 rounded-lg flex items-center justify-center ${isMobile ? 'w-8 h-8' : 'w-10 h-10'}`}>
-              <Code2 className={`text-purple-600 ${isMobile ? 'w-4 h-4' : 'w-5 h-5'}`} />
-            </div>
-            <div>
-              <h3 className={`font-semibold ${isMobile ? 'text-base' : 'text-lg'}`}>
-                {isMobile ? 'Personalizado' : 'Pixel Personalizado'}
-              </h3>
-              {!isMobile && (
-                <p className="text-sm text-muted-foreground">
-                  Adicione códigos de pixel ou scripts personalizados
-                </p>
-              )}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={settings.custom?.enabled || false}
-              onCheckedChange={(enabled) => updateSettings('custom', { enabled })}
-            />
-            <Badge variant={settings.custom?.enabled ? 'default' : 'secondary'}>
-              {settings.custom?.enabled ? 'Ativo' : 'Inativo'}
-            </Badge>
-          </div>
-        </div>
 
-        <div className="space-y-4">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Nome do Pixel (opcional)</label>
-            <Input
-              placeholder="Google Analytics, TikTok Pixel, etc."
-              value={settings.custom?.name || ''}
-              onChange={(e) => updateSettings('custom', { name: e.target.value })}
-              disabled={!settings.custom?.enabled}
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <label className="text-sm font-medium">Código do Pixel</label>
-              {!isMobile && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="w-4 h-4 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Cole aqui o código JavaScript do seu pixel ou script de rastreamento</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-            <Textarea
-              placeholder={isMobile ? `<script>
-  // Seu código aqui
-</script>` : `<!-- Exemplo: -->
-<script>
-  gtag('event', 'page_view', {
-    page_title: 'Quiz Completed',
-    page_location: window.location.href
-  });
-</script>`}
-              value={settings.custom?.code || ''}
-              onChange={(e) => updateSettings('custom', { code: e.target.value })}
-              disabled={!settings.custom?.enabled}
-              rows={isMobile ? 4 : 8}
-              className="font-mono text-sm"
-            />
-          </div>
-        </div>
-      </Card>
 
       <div className={`text-center bg-muted/50 rounded-lg ${isMobile ? 'p-3' : 'p-4'}`}>
         <p className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>

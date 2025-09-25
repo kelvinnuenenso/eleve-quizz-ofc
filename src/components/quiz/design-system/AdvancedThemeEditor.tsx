@@ -102,10 +102,10 @@ const GRADIENT_PRESETS = [
 export function AdvancedThemeEditor({ theme, onChange, onPreview }: AdvancedThemeEditorProps) {
   const [selectedColorType, setSelectedColorType] = useState<keyof ThemeConfig['colors']>('primary');
 
-  const updateTheme = (path: string, value: any) => {
+  const updateTheme = (path: string, value: unknown) => {
     const newTheme = { ...theme };
     const keys = path.split('.');
-    let current: any = newTheme;
+    let current: Record<string, unknown> = newTheme;
     
     for (let i = 0; i < keys.length - 1; i++) {
       current = current[keys[i]];

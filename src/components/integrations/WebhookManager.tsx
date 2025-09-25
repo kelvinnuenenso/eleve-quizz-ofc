@@ -5,47 +5,88 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
 import { 
+  Webhook, 
   Plus, 
-  Settings, 
-  Play, 
-  Pause, 
   Trash2, 
-  Copy, 
-  ExternalLink,
+  Edit3, 
+  Eye, 
+  Settings,
   CheckCircle,
-  XCircle,
+  AlertTriangle,
+  Info,
+  ExternalLink,
+  Copy,
+  Save,
+  Download,
+  Upload,
+  Play,
+  Pause,
+  RefreshCw,
   Clock,
-  RotateCcw,
   Zap,
-  Globe
+  Filter,
+  Calendar,
+  Activity,
+  Link,
+  Database,
+  Server,
+  Cloud,
+  Wifi,
+  WifiOff,
+  AlertCircle,
+  HelpCircle,
+  FileText,
+  Code,
+  Terminal,
+  Layers,
+  Network,
+  Send,
+  History,
+  BarChart3,
+  Target,
+  Globe,
+  Lock,
+  Unlock,
+  Key,
+  Shield
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { webhookSystem, WebhookConfig, WebhookEvent, WebhookPayload } from '@/lib/webhookSystem';
+import type { Quiz } from '@/types/quiz';
 
-interface Webhook {
-  id: string;
-  name: string;
-  url: string;
-  events: WebhookEvent[];
-  isActive: boolean;
-  secretKey?: string;
-  retryAttempts: number;
-  retryDelay: number; // in seconds
-  headers: Record<string, string>;
-  payload: WebhookPayload;
-  createdAt: string;
-  lastTriggered?: string;
-  totalTriggers: number;
-  successfulTriggers: number;
-  failedTriggers: number;
+interface WebhookManagerProps {
+  quiz?: Quiz;
+  onQuizUpdate?: (quiz: Quiz) => void;
 }
 
-interface WebhookEvent {
-  type: 'quiz_started' | 'quiz_completed' | 'lead_captured' | 'result_generated';
-  enabled: boolean;
+interface WebhookTemplate {
+  id: string;
+  name: string;
+  description: string;
+  url: string;
+  events: WebhookEvent[];
+  headers: Record<string, string>;
+  category: 'crm' | 'email' | 'analytics' | 'automation' | 'custom';
+  icon: string;
+  documentation?: string;
+}
+
+interface WebhookLog {
+  id: string;
+  webhookId: string;
+  webhookName: string;
+  event: WebhookEvent;
+  quizId: string;
+  payload: WebhookPayload;
+  responseStatus: number;
+  responseBody: string | null;
+  errorMessage: string | null;
+  attemptCount: number;
+  executedAt: string;
 }
 
 interface WebhookPayload {
@@ -66,7 +107,7 @@ interface WebhookLog {
   responseTime: number;
   attempt: number;
   error?: string;
-  payload: any;
+  payload: Record<string, unknown>;
 }
 
 interface WebhookManagerProps {
@@ -108,276 +149,223 @@ export const WebhookManager = ({ quizId }: WebhookManagerProps) => {
     loadWebhookLogs();
   }, [quizId]);
 
-  const loadWebhooks = () => {
-    // Mock webhooks data
-    const mockWebhooks: Webhook[] = [
-      {
-        id: 'webhook_1',
-        name: 'Zapier Integration',
-        url: 'https://hooks.zapier.com/hooks/catch/12345/abcdef/',
-        events: [
-          { type: 'quiz_completed', enabled: true },
-          { type: 'lead_captured', enabled: true },
-          { type: 'quiz_started', enabled: false },
-          { type: 'result_generated', enabled: false }
-        ],
-        isActive: true,
-        retryAttempts: 3,
-        retryDelay: 5,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': 'your-api-key'
-        },
-        payload: {
-          includeUserData: true,
-          includeQuizData: true,
-          includeAnswers: true,
-          includeMetadata: false,
-          customFields: {
-            source: 'elevado-quiz',
-            environment: 'production'
-          }
-        },
-        createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-        lastTriggered: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        totalTriggers: 156,
-        successfulTriggers: 149,
-        failedTriggers: 7
-      },
-      {
-        id: 'webhook_2',
-        name: 'CRM Sync',
-        url: 'https://api.crm.com/webhooks/leads',
-        events: [
-          { type: 'lead_captured', enabled: true },
-          { type: 'quiz_completed', enabled: false },
-          { type: 'quiz_started', enabled: false },
-          { type: 'result_generated', enabled: false }
-        ],
-        isActive: false,
-        retryAttempts: 5,
-        retryDelay: 10,
-        headers: {
-          'Authorization': 'Bearer your-token',
-          'Content-Type': 'application/json'
-        },
-        payload: {
-          includeUserData: true,
-          includeQuizData: false,
-          includeAnswers: false,
-          includeMetadata: true,
-          customFields: {}
-        },
-        createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-        lastTriggered: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        totalTriggers: 89,
-        successfulTriggers: 84,
-        failedTriggers: 5
-      }
-    ];
-
-    setWebhooks(mockWebhooks);
+  const loadWebhooks = async () => {
+    try {
+      if (!quiz?.id) return;
+      
+      // Get real webhooks from the webhook system
+      const realWebhooks = await webhookSystem.getWebhooks(quiz.id);
+      setWebhooks(realWebhooks);
+    } catch (error) {
+      console.error('Error loading webhooks:', error);
+      setWebhooks([]); // Empty array for new users
+    }
   };
 
-  const loadWebhookLogs = () => {
-    // Mock webhook logs
-    const mockLogs: WebhookLog[] = [
-      {
-        id: 'log_1',
-        webhookId: 'webhook_1',
-        timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        event: 'quiz_completed',
-        status: 'success',
-        statusCode: 200,
-        responseTime: 245,
-        attempt: 1,
-        payload: {
-          event: 'quiz_completed',
-          quiz_id: quizId,
-          user_data: { email: 'user@example.com' },
-          completion_time: '2024-01-15T10:30:00Z'
-        }
-      },
-      {
-        id: 'log_2',
-        webhookId: 'webhook_1',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        event: 'lead_captured',
-        status: 'failed',
-        statusCode: 500,
-        responseTime: 5000,
-        attempt: 3,
-        error: 'Internal Server Error - Database connection timeout',
-        payload: {
-          event: 'lead_captured',
-          quiz_id: quizId,
-          lead_data: { email: 'lead@example.com', name: 'João Silva' }
-        }
-      },
-      {
-        id: 'log_3',
-        webhookId: 'webhook_2',
-        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        event: 'lead_captured',
-        status: 'success',
-        statusCode: 201,
-        responseTime: 189,
-        attempt: 1,
-        payload: {
-          event: 'lead_captured',
-          quiz_id: quizId,
-          lead_data: { email: 'customer@example.com', name: 'Maria Santos' }
-        }
-      }
-    ];
-
-    setLogs(mockLogs);
+  const loadLogs = () => {
+    if (!quiz) return;
+    
+    const webhookLogs = webhookSystem.getWebhookLogs(quiz.id);
+    setLogs(webhookLogs);
   };
 
-  const createWebhook = () => {
-    const webhook: Webhook = {
+  const addWebhook = () => {
+    if (!quiz || !newWebhook.name || !newWebhook.url) return;
+
+    const webhook: WebhookConfig = {
       id: `webhook_${Date.now()}`,
-      name: newWebhook.name || 'Novo Webhook',
-      url: newWebhook.url || '',
+      name: newWebhook.name,
+      url: newWebhook.url,
       events: newWebhook.events || [],
-      isActive: newWebhook.isActive ?? true,
-      retryAttempts: newWebhook.retryAttempts || 3,
-      retryDelay: newWebhook.retryDelay || 5,
       headers: newWebhook.headers || {},
-      payload: newWebhook.payload || {
-        includeUserData: true,
-        includeQuizData: true,
-        includeAnswers: true,
-        includeMetadata: false,
-        customFields: {}
-      },
-      createdAt: new Date().toISOString(),
-      totalTriggers: 0,
-      successfulTriggers: 0,
-      failedTriggers: 0
+      active: newWebhook.active ?? true,
+      retryCount: newWebhook.retryCount || 3,
+      timeoutSeconds: newWebhook.timeoutSeconds || 30
     };
 
-    setWebhooks([webhook, ...webhooks]);
-    setIsCreating(false);
-    setNewWebhook({});
+    webhookSystem.registerWebhook(quiz.id, webhook);
+    loadWebhooks();
     
-    toast({
-      title: "Webhook criado",
-      description: "Webhook configurado com sucesso!"
+    setNewWebhook({
+      name: '',
+      url: '',
+      events: [],
+      headers: {},
+      active: true,
+      retryCount: 3,
+      timeoutSeconds: 30
     });
+    setShowAddWebhook(false);
   };
 
-  const toggleWebhook = (webhookId: string, isActive: boolean) => {
-    setWebhooks(webhooks.map(w => 
-      w.id === webhookId ? { ...w, isActive } : w
-    ));
-    
-    toast({
-      title: isActive ? "Webhook ativado" : "Webhook desativado",
-      description: `O webhook foi ${isActive ? 'ativado' : 'desativado'} com sucesso.`
-    });
-  };
+  const updateWebhook = (webhookId: string, updates: Partial<WebhookConfig>) => {
+    if (!quiz) return;
 
-  const testWebhook = async (webhookId: string) => {
-    setTestingWebhook(webhookId);
-    
     const webhook = webhooks.find(w => w.id === webhookId);
     if (!webhook) return;
 
-    try {
-      // Simulate webhook test
-      const testPayload = {
-        event: 'test',
-        quiz_id: quizId,
-        timestamp: new Date().toISOString(),
-        test_data: {
-          message: 'This is a test webhook from Elevado',
-          quiz_name: 'Test Quiz',
-          user_data: { email: 'test@example.com' }
-        }
-      };
-
-      // Make actual webhook call
-      const response = await fetch(webhook.url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...webhook.headers
-        },
-        body: JSON.stringify(testPayload)
-      });
-
-      if (response.ok) {
-        toast({
-          title: "Teste bem-sucedido!",
-          description: `Webhook respondeu com status ${response.status}`
-        });
-      } else {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-    } catch (error) {
-      toast({
-        title: "Erro no teste",
-        description: `Falha ao testar webhook: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
-        variant: "destructive"
-      });
-    } finally {
-      setTestingWebhook(null);
-    }
+    const updatedWebhook = { ...webhook, ...updates };
+    webhookSystem.registerWebhook(quiz.id, updatedWebhook);
+    loadWebhooks();
   };
 
   const deleteWebhook = (webhookId: string) => {
-    setWebhooks(webhooks.filter(w => w.id !== webhookId));
-    toast({
-      title: "Webhook removido",
-      description: "Webhook foi removido com sucesso."
-    });
+    if (!quiz) return;
+
+    webhookSystem.removeWebhook(quiz.id, webhookId);
+    loadWebhooks();
   };
 
-  const copyWebhookUrl = (url: string) => {
-    navigator.clipboard.writeText(url);
-    toast({
-      title: "URL copiada",
-      description: "URL do webhook foi copiada para a área de transferência."
-    });
-  };
+  const testWebhook = async (webhookId: string) => {
+    const webhook = webhooks.find(w => w.id === webhookId);
+    if (!webhook) return;
 
-  const retryFailedWebhook = (logId: string) => {
-    // Simulate retry
-    setLogs(logs.map(log => 
-      log.id === logId 
-        ? { ...log, status: 'retrying' as const, attempt: log.attempt + 1 }
-        : log
-    ));
-
-    setTimeout(() => {
-      setLogs(logs.map(log => 
-        log.id === logId 
-          ? { ...log, status: Math.random() > 0.3 ? 'success' : 'failed' as const }
-          : log
-      ));
-    }, 2000);
-
-    toast({
-      title: "Tentativa de reenvio",
-      description: "Tentando reenviar webhook..."
-    });
-  };
-
-  const getStatusColor = (status: WebhookLog['status']) => {
-    switch (status) {
-      case 'success': return 'text-green-600';
-      case 'failed': return 'text-red-600';
-      case 'retrying': return 'text-yellow-600';
+    setIsTesting(true);
+    
+    try {
+      const success = await webhookSystem.testWebhook(webhook);
+      
+      if (success) {
+        // Simular log de sucesso
+        const testLog: WebhookLog = {
+          id: `test_${Date.now()}`,
+          webhookId: webhook.id,
+          webhookName: webhook.name,
+          event: 'quiz_start',
+          quizId: quiz?.id || 'test',
+          payload: {
+            event: 'quiz_start',
+            timestamp: new Date().toISOString(),
+            quiz: {
+              id: quiz?.id || 'test',
+              name: quiz?.name || 'Test Quiz',
+              publicId: quiz?.publicId || 'test-123'
+            },
+            data: { test: true }
+          },
+          responseStatus: 200,
+          responseBody: 'OK',
+          errorMessage: null,
+          attemptCount: 1,
+          executedAt: new Date().toISOString()
+        };
+        
+        setLogs(prev => [testLog, ...prev]);
+      }
+    } catch (error) {
+      console.error('Erro ao testar webhook:', error);
+    } finally {
+      setIsTesting(false);
     }
   };
 
-  const getStatusIcon = (status: WebhookLog['status']) => {
-    switch (status) {
-      case 'success': return <CheckCircle className="w-4 h-4" />;
-      case 'failed': return <XCircle className="w-4 h-4" />;
-      case 'retrying': return <Clock className="w-4 h-4" />;
+  const applyTemplate = (templateId: string) => {
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+
+    setNewWebhook({
+      name: template.name,
+      url: template.url,
+      events: template.events,
+      headers: template.headers,
+      active: true,
+      retryCount: 3,
+      timeoutSeconds: 30
+    });
+    setShowAddWebhook(true);
+  };
+
+  const exportWebhooks = () => {
+    const config = {
+      webhooks,
+      templates: templates.filter(t => !['zapier_integration', 'hubspot_crm', 'mailchimp_audience'].includes(t.id)),
+      exported_at: new Date().toISOString()
+    };
+
+    const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `webhooks-${quiz?.name || 'quiz'}-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importWebhooks = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !quiz) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const config = JSON.parse(e.target?.result as string);
+        if (config.webhooks) {
+          config.webhooks.forEach((webhook: WebhookConfig) => {
+            webhookSystem.registerWebhook(quiz.id, webhook);
+          });
+          loadWebhooks();
+        }
+        if (config.templates) {
+          setTemplates(prev => [...prev, ...config.templates]);
+        }
+      } catch (error) {
+        console.error('Erro ao importar webhooks:', error);
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  const getEventIcon = (event: WebhookEvent) => {
+    switch (event) {
+      case 'quiz_start':
+        return <Play className="w-4 h-4 text-green-600" />;
+      case 'quiz_complete':
+        return <CheckCircle className="w-4 h-4 text-blue-600" />;
+      case 'lead_capture':
+        return <Target className="w-4 h-4 text-purple-600" />;
+      case 'question_answer':
+        return <HelpCircle className="w-4 h-4 text-orange-600" />;
+      case 'drop_off':
+        return <AlertTriangle className="w-4 h-4 text-red-600" />;
+      default:
+        return <Activity className="w-4 h-4 text-gray-600" />;
     }
+  };
+
+  const getStatusIcon = (status: number) => {
+    if (status >= 200 && status < 300) {
+      return <CheckCircle className="w-4 h-4 text-green-600" />;
+    } else if (status >= 400) {
+      return <AlertTriangle className="w-4 h-4 text-red-600" />;
+    } else if (status === 0) {
+      return <WifiOff className="w-4 h-4 text-gray-600" />;
+    }
+    return <Clock className="w-4 h-4 text-yellow-600" />;
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'crm':
+        return '🎯';
+      case 'email':
+        return '📧';
+      case 'analytics':
+        return '📊';
+      case 'automation':
+        return '⚡';
+      case 'custom':
+        return '🔧';
+      default:
+        return '🔗';
+    }
+  };
+
+  const stats = quiz ? webhookSystem.getWebhookStats(quiz.id) : {
+    totalWebhooks: 0,
+    activeWebhooks: 0,
+    totalExecutions: 0,
+    successfulExecutions: 0,
+    failedExecutions: 0
   };
 
   return (
@@ -385,75 +373,92 @@ export const WebhookManager = ({ quizId }: WebhookManagerProps) => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-2xl font-bold">Gerenciador de Webhooks</h3>
+          <h3 className="text-2xl font-bold flex items-center gap-2">
+            <Webhook className="w-6 h-6" />
+            Webhooks Automáticos
+          </h3>
           <p className="text-muted-foreground">
-            Configure webhooks para integrar com serviços externos
+            Configure integrações automáticas para seus quizzes
           </p>
         </div>
-        <Button onClick={() => setIsCreating(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Novo Webhook
-        </Button>
+        <div className="flex items-center gap-2">
+          <input
+            type="file"
+            accept=".json"
+            onChange={importWebhooks}
+            className="hidden"
+            id="import-webhooks"
+          />
+          <Button variant="outline" onClick={() => document.getElementById('import-webhooks')?.click()}>
+            <Upload className="w-4 h-4 mr-2" />
+            Importar
+          </Button>
+          <Button variant="outline" onClick={exportWebhooks}>
+            <Download className="w-4 h-4 mr-2" />
+            Exportar
+          </Button>
+          <Button onClick={() => setShowAddWebhook(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Webhook
+          </Button>
+        </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total de Webhooks
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{webhooks.length}</div>
-            <div className="text-sm text-muted-foreground">
-              {webhooks.filter(w => w.isActive).length} ativos
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Webhook className="w-4 h-4 text-blue-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">Total</p>
+                <p className="text-2xl font-bold">{stats.totalWebhooks}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Disparos Hoje
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {webhooks.reduce((sum, w) => sum + w.totalTriggers, 0)}
-            </div>
-            <div className="text-sm text-green-600">
-              {webhooks.reduce((sum, w) => sum + w.successfulTriggers, 0)} sucessos
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">Ativos</p>
+                <p className="text-2xl font-bold">{stats.activeWebhooks}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Taxa de Sucesso
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {webhooks.length > 0 
-                ? Math.round((webhooks.reduce((sum, w) => sum + w.successfulTriggers, 0) / webhooks.reduce((sum, w) => sum + w.totalTriggers, 1)) * 100)
-                : 0}%
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Send className="w-4 h-4 text-purple-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">Execuções</p>
+                <p className="text-2xl font-bold">{stats.totalExecutions}</p>
+              </div>
             </div>
           </CardContent>
         </Card>
-
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Falhas Recentes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {logs.filter(l => l.status === 'failed').length}
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">Sucessos</p>
+                <p className="text-2xl font-bold">{stats.successfulExecutions}</p>
+              </div>
             </div>
-            <div className="text-sm text-muted-foreground">Últimas 24h</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-600" />
+              <div>
+                <p className="text-sm text-muted-foreground">Falhas</p>
+                <p className="text-2xl font-bold">{stats.failedExecutions}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -461,13 +466,126 @@ export const WebhookManager = ({ quizId }: WebhookManagerProps) => {
       <Tabs defaultValue="webhooks" className="space-y-4">
         <TabsList>
           <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
-          <TabsTrigger value="logs">Logs</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="logs">Logs</TabsTrigger>
+          <TabsTrigger value="settings">Configurações</TabsTrigger>
         </TabsList>
 
         <TabsContent value="webhooks" className="space-y-4">
+          {showAddWebhook && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Novo Webhook</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Nome do Webhook</Label>
+                    <Input
+                      value={newWebhook.name}
+                      onChange={(e) => setNewWebhook({ ...newWebhook, name: e.target.value })}
+                      placeholder="Ex: HubSpot Integration"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>URL do Webhook</Label>
+                    <Input
+                      value={newWebhook.url}
+                      onChange={(e) => setNewWebhook({ ...newWebhook, url: e.target.value })}
+                      placeholder="https://api.exemplo.com/webhook"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Eventos</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    {(['quiz_start', 'quiz_complete', 'lead_capture', 'question_answer', 'drop_off'] as WebhookEvent[]).map(event => (
+                      <div key={event} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id={event}
+                          checked={newWebhook.events?.includes(event)}
+                          onChange={(e) => {
+                            const events = newWebhook.events || [];
+                            if (e.target.checked) {
+                              setNewWebhook({ ...newWebhook, events: [...events, event] });
+                            } else {
+                              setNewWebhook({ ...newWebhook, events: events.filter(ev => ev !== event) });
+                            }
+                          }}
+                        />
+                        <Label htmlFor={event} className="text-sm">
+                          {event.replace('_', ' ')}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Tentativas de Retry</Label>
+                    <Input
+                      type="number"
+                      value={newWebhook.retryCount}
+                      onChange={(e) => setNewWebhook({ ...newWebhook, retryCount: parseInt(e.target.value) })}
+                      min="0"
+                      max="10"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Timeout (segundos)</Label>
+                    <Input
+                      type="number"
+                      value={newWebhook.timeoutSeconds}
+                      onChange={(e) => setNewWebhook({ ...newWebhook, timeoutSeconds: parseInt(e.target.value) })}
+                      min="5"
+                      max="300"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Headers Personalizados (JSON)</Label>
+                  <Textarea
+                    value={JSON.stringify(newWebhook.headers || {}, null, 2)}
+                    onChange={(e) => {
+                      try {
+                        const headers = JSON.parse(e.target.value);
+                        setNewWebhook({ ...newWebhook, headers });
+                      } catch (error) {
+                        // Ignore invalid JSON
+                      }
+                    }}
+                    placeholder='{\n  "Authorization": "Bearer token",\n  "X-API-Key": "key"\n}'
+                    rows={4}
+                  />
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    checked={newWebhook.active}
+                    onCheckedChange={(active) => setNewWebhook({ ...newWebhook, active })}
+                  />
+                  <Label>Ativar webhook</Label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button onClick={addWebhook}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Criar Webhook
+                  </Button>
+                  <Button variant="outline" onClick={() => setShowAddWebhook(false)}>
+                    Cancelar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="space-y-4">
-            {webhooks.map((webhook) => (
+            {webhooks.map(webhook => (
               <Card key={webhook.id}>
                 <CardHeader>
                   <div className="flex items-center justify-between">

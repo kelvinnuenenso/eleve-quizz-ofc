@@ -105,7 +105,7 @@ interface ComponentPropertiesProps {
 }
 
 function ComponentProperties({ component, onUpdate }: ComponentPropertiesProps) {
-  const updateContent = (updates: any) => {
+  const updateContent = (updates: Record<string, unknown>) => {
     onUpdate({
       content: { ...component.content, ...updates }
     });
@@ -459,7 +459,7 @@ function ComponentProperties({ component, onUpdate }: ComponentPropertiesProps) 
 
 interface MultipleChoiceEditorProps {
   component: Component;
-  onUpdate: (updates: any) => void;
+  onUpdate: (updates: Record<string, unknown>) => void;
 }
 
 function MultipleChoiceEditor({ component, onUpdate }: MultipleChoiceEditorProps) {
@@ -477,14 +477,14 @@ function MultipleChoiceEditor({ component, onUpdate }: MultipleChoiceEditorProps
     });
   };
 
-  const updateOption = (index: number, updates: any) => {
+  const updateOption = (index: number, updates: Record<string, unknown>) => {
     const newOptions = [...options];
     newOptions[index] = { ...newOptions[index], ...updates };
     onUpdate({ options: newOptions });
   };
 
   const removeOption = (index: number) => {
-    const newOptions = options.filter((_: any, i: number) => i !== index);
+    const newOptions = options.filter((_: unknown, i: number) => i !== index);
     onUpdate({ options: newOptions });
   };
 
@@ -537,7 +537,7 @@ function MultipleChoiceEditor({ component, onUpdate }: MultipleChoiceEditorProps
         </div>
 
         <div className="space-y-2">
-          {options.map((option: any, index: number) => (
+          {options.map((option: Record<string, unknown>, index: number) => (
             <Card key={option.id || index} className="p-3">
               <div className="space-y-3">
                 <div>

@@ -44,56 +44,28 @@ export function EnhancedAnalytics({ quizId }: EnhancedAnalyticsProps) {
   const [timeRange, setTimeRange] = useState('7days');
   const [selectedView, setSelectedView] = useState('overview');
 
-  // Mock data - in real app this would come from localDB or Supabase
-  const mockData = {
+  // Real analytics data - starts empty for new quizzes
+  const analyticsData = {
     overview: {
-      totalViews: 1247,
-      totalStarts: 892,
-      totalCompletions: 634,
-      totalLeads: 487,
-      conversionRate: 71.1,
-      avgTimeSpent: 4.2,
-      bounceRate: 28.9
+      totalViews: 0,
+      totalStarts: 0,
+      totalCompletions: 0,
+      totalLeads: 0,
+      conversionRate: 0,
+      avgTimeSpent: 0,
+      bounceRate: 0
     },
     funnelData: [
-      { name: 'Visualizações', value: 1247, fill: '#8884d8' },
-      { name: 'Iniciaram', value: 892, fill: '#82ca9d' },
-      { name: 'Pergunta 2', value: 756, fill: '#ffc658' },
-      { name: 'Pergunta 3', value: 698, fill: '#ff7c7c' },
-      { name: 'Completaram', value: 634, fill: '#8dd1e1' }
+      { name: 'Visualizações', value: 0, fill: '#8884d8' },
+      { name: 'Iniciaram', value: 0, fill: '#82ca9d' },
+      { name: 'Pergunta 2', value: 0, fill: '#ffc658' },
+      { name: 'Pergunta 3', value: 0, fill: '#ff7c7c' },
+      { name: 'Completaram', value: 0, fill: '#8dd1e1' }
     ],
-    timeSeriesData: [
-      { date: '2024-01-01', views: 45, starts: 32, completions: 24, leads: 18 },
-      { date: '2024-01-02', views: 52, starts: 38, completions: 28, leads: 21 },
-      { date: '2024-01-03', views: 48, starts: 35, completions: 26, leads: 19 },
-      { date: '2024-01-04', views: 61, starts: 44, completions: 32, leads: 24 },
-      { date: '2024-01-05', views: 58, starts: 42, completions: 31, leads: 23 },
-      { date: '2024-01-06', views: 67, starts: 48, completions: 35, leads: 27 },
-      { date: '2024-01-07', views: 72, starts: 51, completions: 38, leads: 29 }
-    ],
-    questionAnalytics: [
-      {
-        question: 'Qual seu principal objetivo?',
-        responses: [
-          { answer: 'Gerar mais leads', count: 234, percentage: 37 },
-          { answer: 'Aumentar vendas', count: 198, percentage: 31 },
-          { answer: 'Fazer diagnósticos', count: 132, percentage: 21 },
-          { answer: 'Engajar audiência', count: 70, percentage: 11 }
-        ]
-      }
-    ],
-    sourceData: [
-      { source: 'Google', visitors: 523, percentage: 42 },
-      { source: 'Facebook', visitors: 312, percentage: 25 },
-      { source: 'Instagram', visitors: 198, percentage: 16 },
-      { source: 'Direto', visitors: 156, percentage: 12 },
-      { source: 'Outros', visitors: 58, percentage: 5 }
-    ],
-    deviceData: [
-      { device: 'Mobile', count: 748, percentage: 60 },
-      { device: 'Desktop', count: 374, percentage: 30 },
-      { device: 'Tablet', count: 125, percentage: 10 }
-    ]
+    timeSeriesData: [],
+    questionAnalytics: [],
+    sourceData: [],
+    deviceData: []
   };
 
   const exportData = (format: 'csv' | 'pdf') => {
@@ -146,9 +118,9 @@ export function EnhancedAnalytics({ quizId }: EnhancedAnalyticsProps) {
             <Eye className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.overview.totalViews.toLocaleString()}</div>
+            <div className="text-2xl font-bold">{analyticsData.overview.totalViews.toLocaleString()}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600 font-medium">+12%</span> vs período anterior
+              {analyticsData.overview.totalViews === 0 ? 'Nenhum dado ainda' : <span className="text-green-600 font-medium">+12%</span> + ' vs período anterior'}
             </p>
           </CardContent>
         </Card>
@@ -159,9 +131,9 @@ export function EnhancedAnalytics({ quizId }: EnhancedAnalyticsProps) {
             <Target className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.overview.conversionRate}%</div>
+            <div className="text-2xl font-bold">{analyticsData.overview.conversionRate}%</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600 font-medium">+3.2%</span> vs período anterior
+              {analyticsData.overview.conversionRate === 0 ? 'Nenhum dado ainda' : <span className="text-green-600 font-medium">+3.2%</span> + ' vs período anterior'}
             </p>
           </CardContent>
         </Card>
@@ -172,9 +144,9 @@ export function EnhancedAnalytics({ quizId }: EnhancedAnalyticsProps) {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.overview.avgTimeSpent}min</div>
+            <div className="text-2xl font-bold">{analyticsData.overview.avgTimeSpent}min</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-red-600 font-medium">-0.3min</span> vs período anterior
+              {analyticsData.overview.avgTimeSpent === 0 ? 'Nenhum dado ainda' : <span className="text-red-600 font-medium">-0.3min</span> + ' vs período anterior'}
             </p>
           </CardContent>
         </Card>
@@ -185,9 +157,9 @@ export function EnhancedAnalytics({ quizId }: EnhancedAnalyticsProps) {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockData.overview.totalLeads}</div>
+            <div className="text-2xl font-bold">{analyticsData.overview.totalLeads}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600 font-medium">+18</span> vs período anterior
+              {analyticsData.overview.totalLeads === 0 ? 'Nenhum dado ainda' : <span className="text-green-600 font-medium">+18</span> + ' vs período anterior'}
             </p>
           </CardContent>
         </Card>
@@ -208,8 +180,17 @@ export function EnhancedAnalytics({ quizId }: EnhancedAnalyticsProps) {
               <CardTitle>Performance ao Longo do Tempo</CardTitle>
             </CardHeader>
             <CardContent>
+              {analyticsData.timeSeriesData.length === 0 ? (
+                <div className="flex items-center justify-center h-[300px] text-muted-foreground">
+                  <div className="text-center">
+                    <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhum dado disponível ainda</p>
+                    <p className="text-sm">Os dados aparecerão quando o quiz começar a receber visitantes</p>
+                  </div>
+                </div>
+              ) : (
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={mockData.timeSeriesData}>
+                <LineChart data={analyticsData.timeSeriesData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" />
                   <YAxis />
@@ -221,6 +202,7 @@ export function EnhancedAnalytics({ quizId }: EnhancedAnalyticsProps) {
                   <Line type="monotone" dataKey="leads" stroke="#ff7c7c" name="Leads" />
                 </LineChart>
               </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -234,18 +216,28 @@ export function EnhancedAnalytics({ quizId }: EnhancedAnalyticsProps) {
               </p>
             </CardHeader>
             <CardContent>
+              {analyticsData.funnelData.every(item => item.value === 0) ? (
+                <div className="flex items-center justify-center h-[400px] text-muted-foreground">
+                  <div className="text-center">
+                    <Target className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhum dado de funil disponível</p>
+                    <p className="text-sm">O funil será preenchido conforme os usuários interagirem com o quiz</p>
+                  </div>
+                </div>
+              ) : (
               <ResponsiveContainer width="100%" height={400}>
                 <FunnelChart>
                   <Tooltip />
                   <Funnel
                     dataKey="value"
-                    data={mockData.funnelData}
+                    data={analyticsData.funnelData}
                     isAnimationActive
                   >
                     <LabelList position="center" fill="#fff" stroke="none" />
                   </Funnel>
                 </FunnelChart>
               </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -256,22 +248,32 @@ export function EnhancedAnalytics({ quizId }: EnhancedAnalyticsProps) {
               <CardTitle>Análise por Pergunta</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {mockData.questionAnalytics.map((question, index) => (
-                <div key={index} className="space-y-3">
-                  <h4 className="font-medium">{question.question}</h4>
-                  <div className="space-y-2">
-                    {question.responses.map((response, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3 border rounded">
-                        <span className="text-sm">{response.answer}</span>
-                        <div className="flex items-center gap-2">
-                          <div className="text-sm font-medium">{response.count}</div>
-                          <Badge variant="secondary">{response.percentage}%</Badge>
-                        </div>
-                      </div>
-                    ))}
+              {analyticsData.questionAnalytics.length === 0 ? (
+                <div className="flex items-center justify-center h-[200px] text-muted-foreground">
+                  <div className="text-center">
+                    <Filter className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhuma resposta registrada ainda</p>
+                    <p className="text-sm">As análises das perguntas aparecerão quando houver respostas</p>
                   </div>
                 </div>
-              ))}
+              ) : (
+                analyticsData.questionAnalytics.map((question, index) => (
+                  <div key={index} className="space-y-3">
+                    <h4 className="font-medium">{question.question}</h4>
+                    <div className="space-y-2">
+                      {question.responses.map((response, idx) => (
+                        <div key={idx} className="flex items-center justify-between p-3 border rounded">
+                          <span className="text-sm">{response.answer}</span>
+                          <div className="flex items-center gap-2">
+                            <div className="text-sm font-medium">{response.count}</div>
+                            <Badge variant="secondary">{response.percentage}%</Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -283,10 +285,19 @@ export function EnhancedAnalytics({ quizId }: EnhancedAnalyticsProps) {
                 <CardTitle>Origem do Tráfego</CardTitle>
               </CardHeader>
               <CardContent>
+                {analyticsData.sourceData.length === 0 ? (
+                  <div className="flex items-center justify-center h-[250px] text-muted-foreground">
+                    <div className="text-center">
+                      <Share className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>Nenhuma origem de tráfego</p>
+                      <p className="text-sm">Dados aparecerão quando houver visitantes</p>
+                    </div>
+                  </div>
+                ) : (
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
                     <Pie
-                      data={mockData.sourceData}
+                      data={analyticsData.sourceData}
                       cx="50%"
                       cy="50%"
                       labelLine={false}
@@ -295,13 +306,14 @@ export function EnhancedAnalytics({ quizId }: EnhancedAnalyticsProps) {
                       fill="#8884d8"
                       dataKey="visitors"
                     >
-                      {mockData.sourceData.map((entry, index) => (
+                      {analyticsData.sourceData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
                     <Tooltip />
                   </PieChart>
                 </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
 
@@ -310,8 +322,17 @@ export function EnhancedAnalytics({ quizId }: EnhancedAnalyticsProps) {
                 <CardTitle>Dispositivos</CardTitle>
               </CardHeader>
               <CardContent>
+                {analyticsData.deviceData.length === 0 ? (
+                  <div className="flex items-center justify-center h-[250px] text-muted-foreground">
+                    <div className="text-center">
+                      <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                      <p>Nenhum dado de dispositivo</p>
+                      <p className="text-sm">Dados aparecerão quando houver visitantes</p>
+                    </div>
+                  </div>
+                ) : (
                 <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={mockData.deviceData}>
+                  <BarChart data={analyticsData.deviceData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="device" />
                     <YAxis />
@@ -319,6 +340,7 @@ export function EnhancedAnalytics({ quizId }: EnhancedAnalyticsProps) {
                     <Bar dataKey="count" fill="#8884d8" />
                   </BarChart>
                 </ResponsiveContainer>
+                )}
               </CardContent>
             </Card>
           </div>

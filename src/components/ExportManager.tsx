@@ -87,7 +87,7 @@ export function ExportManager({ quizId }: ExportManagerProps) {
     );
   };
 
-  const generateCSV = (data: any[], headers: string[]) => {
+  const generateCSV = (data: Record<string, unknown>[], headers: string[]) => {
     const csvContent = [
       headers.join(','),
       ...data.map(row => headers.map(header => 
@@ -114,7 +114,7 @@ export function ExportManager({ quizId }: ExportManagerProps) {
     setIsExporting(true);
 
     try {
-      let data: any[] = [];
+      let data: Record<string, unknown>[] = [];
       let filename = '';
 
       // Get data based on export type
@@ -195,7 +195,7 @@ export function ExportManager({ quizId }: ExportManagerProps) {
 
       // Filter data by selected fields
       const filteredData = data.map(item => {
-        const filtered: any = {};
+        const filtered: Record<string, unknown> = {};
         selectedFields.forEach(field => {
           if (item.hasOwnProperty(field)) {
             filtered[field] = item[field];

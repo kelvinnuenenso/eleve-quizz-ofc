@@ -34,61 +34,10 @@ export const HeatmapAnalytics = ({ quizId }: HeatmapAnalyticsProps) => {
   const loadHeatmapData = async () => {
     setLoading(true);
     
-    // Simulate heatmap data generation
-    const mockHeatmapData: HeatmapData[] = [
-      {
-        elementId: 'question-1',
-        elementType: 'question',
-        x: 50,
-        y: 30,
-        clicks: 245,
-        hovers: 389,
-        timeSpent: 12500,
-        conversionImpact: 0.85
-      },
-      {
-        elementId: 'option-1a',
-        elementType: 'option',
-        x: 30,
-        y: 45,
-        clicks: 156,
-        hovers: 234,
-        timeSpent: 3200,
-        conversionImpact: 0.92
-      },
-      {
-        elementId: 'option-1b',
-        elementType: 'option',
-        x: 70,
-        y: 45,
-        clicks: 89,
-        hovers: 156,
-        timeSpent: 2800,
-        conversionImpact: 0.78
-      },
-      {
-        elementId: 'next-button',
-        elementType: 'button',
-        x: 50,
-        y: 75,
-        clicks: 198,
-        hovers: 312,
-        timeSpent: 1500,
-        conversionImpact: 0.95
-      },
-      {
-        elementId: 'progress-bar',
-        elementType: 'progress',
-        x: 50,
-        y: 10,
-        clicks: 45,
-        hovers: 178,
-        timeSpent: 890,
-        conversionImpact: 0.65
-      }
-    ];
+    // Carregar dados reais de heatmap (vazios para novos usuários)
+    const emptyHeatmapData: HeatmapData[] = [];
 
-    setHeatmapData(mockHeatmapData);
+    setHeatmapData(emptyHeatmapData);
     setLoading(false);
   };
 
@@ -158,7 +107,7 @@ export const HeatmapAnalytics = ({ quizId }: HeatmapAnalyticsProps) => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={viewMode} onValueChange={(value: any) => setViewMode(value)}>
+          <Select value={viewMode} onValueChange={(value: string) => setViewMode(value)}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>

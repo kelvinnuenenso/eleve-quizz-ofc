@@ -10,8 +10,10 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { saveQuiz, loadQuiz, deleteQuiz } from '@/lib/quizzes';
+import { quizzesApi, questionsApi, optionsApi } from '@/lib/supabaseApi';
 import { Quiz, Question, QuestionType } from '@/types/quiz';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/components/SimpleAuthProvider';
 import { QuestionEditor } from '@/components/quiz/QuestionEditor';
 import { ThemeEditor } from '@/components/quiz/ThemeEditor';
 import { OutcomeEditor } from '@/components/quiz/OutcomeEditor';
@@ -63,6 +65,7 @@ const QuizEditor = () => {
   const { quizId } = useParams<{ quizId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, session } = useAuth();
   const isMobile = useIsMobile();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
@@ -99,27 +102,45 @@ const QuizEditor = () => {
   }, [quizId, toast]);
 
   const handleSave = async () => {
-    if (!quiz) return;
+    if (!quiz || !session) return;
 
     setSaving(true);
     try {
-      const updatedQuiz = {
-        ...quiz,
-        updatedAt: new Date().toISOString()
-      };
-      
-      await saveQuiz(updatedQuiz);
+      const response = await fetch(`/api/quizzes/${quiz.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          name: quiz.name,
+          description: quiz.description,
+          questions: quiz.questions,
+          steps: quiz.steps,
+          theme: quiz.theme,
+          outcomes: quiz.outcomes,
+          pixelSettings: quiz.pixelSettings,
+          settings: quiz.settings
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro ao salvar quiz');
+      }
+
+      const updatedQuiz = await response.json();
       setQuiz(updatedQuiz);
       
       toast({
         title: "Quiz salvo com sucesso!",
         description: "Todas as alterações foram salvas."
       });
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error saving quiz:', error);
       toast({
         title: "Erro ao salvar",
-        description: "Tente novamente em alguns instantes.",
+        description: error instanceof Error ? error.message : "Tente novamente em alguns instantes.",
         variant: "destructive"
       });
     } finally {
@@ -128,7 +149,7 @@ const QuizEditor = () => {
   };
 
   const handlePublish = async () => {
-    if (!quiz) return;
+    if (!quiz || !session) return;
 
     // Validation before publishing
     const errors = validateQuizForPublishing(quiz);
@@ -141,52 +162,83 @@ const QuizEditor = () => {
       return;
     }
 
-    const updatedQuiz = {
-      ...quiz,
-      status: 'published' as const,
-      publishedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      publicId: quiz.publicId || generatePublicId(quiz.name)
-    };
-
     try {
-      await saveQuiz(updatedQuiz);
+      const response = await fetch(`/api/quizzes/${quiz.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          name: quiz.name,
+          description: quiz.description,
+          questions: quiz.questions,
+          steps: quiz.steps,
+          theme: quiz.theme,
+          outcomes: quiz.outcomes,
+          pixelSettings: quiz.pixelSettings,
+          settings: quiz.settings,
+          status: 'published',
+          published_at: new Date().toISOString()
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro ao publicar quiz');
+      }
+
+      const updatedQuiz = await response.json();
       setQuiz(updatedQuiz);
       
       // Analytics
       console.log('quiz_published', { 
         quizId: quiz.id, 
-        publicId: updatedQuiz.publicId,
+        publicId: updatedQuiz.public_id,
         stageCount: quiz.steps?.length || 0,
         componentCount: quiz.steps?.reduce((sum, stage) => sum + stage.components.length, 0) || 0
       });
       
       toast({
         title: "Quiz publicado!",
-        description: `Disponível em: ${window.location.origin}/q/${updatedQuiz.publicId}`
+        description: `Disponível em: ${window.location.origin}/quiz/${updatedQuiz.public_id}`
       });
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error('Error publishing quiz:', error);
       toast({
         title: "Erro ao publicar",
+        description: error instanceof Error ? error.message : "Tente novamente em alguns instantes.",
         variant: "destructive"
       });
     }
   };
 
   const handleDelete = async () => {
-    if (!quiz || !window.confirm('Tem certeza que deseja excluir este quiz? Esta ação não pode ser desfeita.')) return;
+    if (!quiz || !session || !window.confirm('Tem certeza que deseja excluir este quiz? Esta ação não pode ser desfeita.')) return;
 
     try {
-      await deleteQuiz(quiz.id);
+      const response = await fetch(`/api/quizzes/${quiz.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Erro ao excluir quiz');
+      }
+
       toast({
         title: "Quiz excluído",
         description: "O quiz foi excluído com sucesso."
       });
       navigate('/app');
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error('Error deleting quiz:', error);
       toast({
         title: "Erro ao excluir",
-        description: "Não foi possível excluir o quiz.",
+        description: error instanceof Error ? error.message : "Não foi possível excluir o quiz.",
         variant: "destructive"
       });
     }
@@ -286,7 +338,7 @@ const QuizEditor = () => {
   const copyPublicLink = () => {
     if (!quiz) return;
     
-    const url = `${window.location.origin}/q/${quiz.publicId}`;
+    const url = `${window.location.origin}/quiz/${quiz.public_id || quiz.publicId}`;
     navigator.clipboard.writeText(url);
     toast({
       title: "Link copiado!",
@@ -350,10 +402,10 @@ const QuizEditor = () => {
               </Badge>
 
               {!isMobile && (
-                <Button variant="outline" size="sm" onClick={() => window.open(`/q/${quiz.publicId}`, '_blank')}>
-                  <Eye className="w-4 h-4 mr-2" />
-                  Preview
-                </Button>
+                <Button variant="outline" size="sm" onClick={() => window.open(`/quiz/${quiz.public_id || quiz.publicId}`, '_blank')}>
+                <Eye className="w-4 h-4 mr-2" />
+                Preview
+              </Button>
               )}
 
               <Button variant="outline" size={isMobile ? "sm" : "sm"} onClick={copyPublicLink}>
@@ -388,7 +440,7 @@ const QuizEditor = () => {
           </div>
 
           {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className={isMobile ? 'mt-2' : 'mt-4'}>
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as string)} className={isMobile ? 'mt-2' : 'mt-4'}>
             <div className={isMobile ? 'overflow-x-auto' : ''}>
               <TabsList className={`grid w-full grid-cols-9 ${isMobile ? 'min-w-max' : 'max-w-6xl'}`}>
                 <TabsTrigger value="stages" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'}`}>
@@ -436,7 +488,7 @@ const QuizEditor = () => {
                   quiz={quiz}
                   onUpdate={setQuiz}
                   onSave={handleSave}
-                  onPreview={() => window.open(`/q/${quiz.publicId}`, '_blank')}
+                  onPreview={() => window.open(`/quiz/${quiz.public_id || quiz.publicId}`, '_blank')}
                   onPublish={handlePublish}
                   onNavigateToTheme={() => setActiveTab('theme')}
                 />
@@ -547,7 +599,7 @@ const QuizEditor = () => {
                           <Button variant="outline" onClick={copyPublicLink}>
                             <Copy className="w-4 h-4" />
                           </Button>
-                          <Button variant="outline" onClick={() => window.open(`/q/${quiz.publicId}`, '_blank')}>
+                          <Button variant="outline" onClick={() => window.open(`/quiz/${quiz.public_id || quiz.publicId}`, '_blank')}>
                             <ExternalLink className="w-4 h-4" />
                           </Button>
                         </div>

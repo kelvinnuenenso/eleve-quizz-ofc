@@ -12,27 +12,19 @@ interface FlowAnalyticsProps {
 }
 
 export function FlowAnalytics({ quiz }: FlowAnalyticsProps) {
-  // Dados mockados para demonstração
+  // Dados reais - vazios para novos usuários
   const analyticsData = {
-    totalViews: 1247,
-    completionRate: 73,
-    averageTime: '4m 32s',
-    dropoffPoints: [
-      { stepId: 'step-2', dropoff: 15, stepName: 'Pergunta sobre idade' },
-      { stepId: 'step-5', dropoff: 8, stepName: 'Formulário de contato' },
-      { stepId: 'step-7', dropoff: 4, stepName: 'Pergunta sobre orçamento' }
-    ],
-    pathAnalysis: [
-      { path: 'Início → Pergunta 1 → Resultado A', users: 456, conversion: 67 },
-      { path: 'Início → Pergunta 1 → Pergunta 2 → Resultado B', users: 321, conversion: 45 },
-      { path: 'Início → Pergunta 1 → Condição → Resultado C', users: 234, conversion: 78 },
-    ],
-    stepPerformance: quiz.steps?.map((step, index) => ({
+    totalViews: 0,
+    completionRate: 0,
+    averageTime: '0m 0s',
+    dropoffPoints: [],
+    pathAnalysis: [],
+    stepPerformance: quiz.steps?.map((step) => ({
       stepId: step.id,
       stepName: step.title,
-      views: Math.floor(Math.random() * 1000) + 200,
-      completions: Math.floor(Math.random() * 800) + 150,
-      averageTime: `${Math.floor(Math.random() * 3) + 1}m ${Math.floor(Math.random() * 59)}s`
+      views: 0,
+      completions: 0,
+      averageTime: '0m 0s'
     })) || []
   };
 

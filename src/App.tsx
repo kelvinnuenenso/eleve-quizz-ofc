@@ -1,18 +1,18 @@
-import { Toaster } from "@/components/ui/toaster";
+import React from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
+import { SimpleAuthProvider } from "@/components/SimpleAuthProvider";
+import { TooltipProvider } from "@/components/ui/simple-tooltip";
 import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
-import { useEffect } from "react";
-import { useErrorRecovery } from "@/hooks/useErrorRecovery";
-import { PWAPrompt } from "@/components/PWAPrompt";
-import { PerformanceMonitor } from "@/components/PerformanceMonitor";
+
 import { supabaseSync } from "@/lib/supabaseSync";
 import { webhookSystem } from "@/lib/webhookSystem";
 import { realAnalytics } from "@/lib/analytics";
 import { realPixelSystem } from "@/lib/pixelSystem";
+
+// Initialize Supabase auto-sync
+supabaseSync.startAutoSync();
 import Index from "./pages/Index";
 import { ProtectedRoute } from './components/ProtectedRoute';
 import Dashboard from "./pages/Dashboard";
@@ -41,50 +41,41 @@ const queryClient = new QueryClient({
 });
 
 const AppContent = () => {
-  useErrorRecovery();
-
-  // Auto-initialize all analytics systems on app start
-  useEffect(() => {
-    const initializeSystems = async () => {
-      try {
-        // Start auto-sync with Supabase
-        supabaseSync.startAutoSync();
-        
-        // Initialize webhook system
-        webhookSystem.initialize();
-        
-        // Initialize pixel system with UTM tracking
-        const utmParams = realPixelSystem.extractUTMParameters();
-        if (Object.keys(utmParams).length > 0) {
-          realPixelSystem.persistUTMParameters(utmParams);
-        }
-        
-        console.log('🚀 Analytics systems fully activated');
-      } catch (error) {
-        console.error('Error initializing analytics systems:', error);
-      }
-    };
-    
-    initializeSystems();
-  }, []);
-  
   return (
     <>
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/app/edit/:quizId" element={<ProtectedRoute><QuizEditor /></ProtectedRoute>} />
-        <Route path="/app/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-        <Route path="/app/templates" element={<ProtectedRoute><Templates /></ProtectedRoute>} />
-        <Route path="/q/:publicId" element={<QuizRunner />} />
-        <Route path="/r/:resultId" element={<EnhancedErrorBoundary><ResultPage /></EnhancedErrorBoundary>} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="/app" element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/quiz/editor/:id?" element={
+          <ProtectedRoute>
+            <QuizEditor />
+          </ProtectedRoute>
+        } />
+        <Route path="/quiz/runner/:id" element={<QuizRunner />} />
+        <Route path="/quiz/:publicId" element={<QuizRunner />} />
+        <Route path="/result/:sessionId" element={<ResultPage />} />
+        <Route path="/settings" element={
+          <ProtectedRoute>
+            <Settings />
+          </ProtectedRoute>
+        } />
+        <Route path="/templates" element={
+          <ProtectedRoute>
+            <Templates />
+          </ProtectedRoute>
+        } />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <PWAPrompt />
-      <PerformanceMonitor />
     </>
   );
 };
@@ -96,17 +87,16 @@ const App = () => (
     showErrorDetails={process.env.NODE_ENV === 'development'}
   >
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
+      <TooltipProvider>
+        <SimpleAuthProvider>
           <BrowserRouter>
             <EnhancedErrorBoundary componentName="Router">
               <AppContent />
+              <Sonner />
             </EnhancedErrorBoundary>
           </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
+        </SimpleAuthProvider>
+      </TooltipProvider>
     </QueryClientProvider>
   </EnhancedErrorBoundary>
 );

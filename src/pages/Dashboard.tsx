@@ -7,9 +7,11 @@ import { LoadingState } from '@/components/LoadingSpinner';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { listQuizzes, saveQuiz } from '@/lib/quizzes';
+import { quizzesApi } from '@/lib/supabaseApi';
 import { localDB } from '@/lib/localStorage';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/components/SimpleAuthProvider';
 import { Quiz } from '@/types/quiz';
+import { generateTestAnalyticsData, clearTestAnalyticsData } from '@/lib/generateTestAnalytics';
 import {
   Plus,
   BarChart3,
@@ -26,7 +28,8 @@ import {
   MousePointer,
   Trophy,
   Target,
-  Mail
+  Mail,
+  Database
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import QuizImporter from '@/components/quiz/QuizImporter';
@@ -40,7 +43,7 @@ import { WebhookManager } from '@/components/integrations/WebhookManager';
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, signOut } = useAuth();
+  const { user, signOut, session } = useAuth();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -52,6 +55,28 @@ const Dashboard = () => {
 
   const loadQuizzes = async () => {
     try {
+      if (user && session) {
+        try {
+          const response = await fetch('/api/quizzes', {
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setQuizzes(data.quizzes);
+            return;
+          } else {
+            console.warn('Failed to load from API, falling back to localStorage');
+          }
+        } catch (apiError) {
+          console.warn('Failed to load from API, falling back to localStorage:', apiError);
+        }
+      }
+      
+      // Fallback to localStorage
       const loadedQuizzes = await listQuizzes();
       setQuizzes(loadedQuizzes);
     } catch (error) {
@@ -64,9 +89,7 @@ const Dashboard = () => {
   const createQuiz = async () => {
     setIsCreating(true);
     try {
-      const newQuiz: Quiz = {
-        id: crypto.randomUUID(),
-        publicId: Math.random().toString(36).slice(2, 8),
+      const newQuizData = {
         name: 'Novo Quiz',
         description: 'Descreva seu quiz aqui...',
         status: 'draft',
@@ -102,20 +125,63 @@ const Dashboard = () => {
               href: '#'
             }
           }
-        },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        }
       };
 
-      await saveQuiz(newQuiz);
-      await loadQuizzes();
-      
-      toast({
-        title: "Quiz criado com sucesso!",
-        description: "Você pode começar a editá-lo agora."
-      });
+      if (user && session) {
+        try {
+          const response = await fetch('/api/quizzes', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(newQuizData)
+          });
 
-      navigate(`/app/edit/${newQuiz.id}`);
+          if (response.ok) {
+            const data = await response.json();
+            await loadQuizzes();
+            
+            toast({
+              title: "Quiz criado com sucesso!",
+              description: "Você pode começar a editá-lo agora."
+            });
+
+            navigate(`/app/edit/${data.quiz.id}`);
+            return;
+          } else {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Erro ao criar quiz');
+          }
+        } catch (apiError) {
+          console.warn('Failed to create via API, falling back to localStorage:', apiError);
+          toast({
+            title: "Erro ao criar quiz",
+            description: apiError.message || "Tente novamente mais tarde.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        // Fallback to localStorage for non-authenticated users
+        const newQuiz: Quiz = {
+          id: crypto.randomUUID(),
+          publicId: Math.random().toString(36).slice(2, 8),
+          ...newQuizData,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        await saveQuiz(newQuiz);
+        await loadQuizzes();
+        
+        toast({
+          title: "Quiz criado com sucesso!",
+          description: "Você pode começar a editá-lo agora."
+        });
+
+        navigate(`/app/edit/${newQuiz.id}`);
+      }
     } catch (error) {
       console.error('Error creating quiz:', error);
       toast({
@@ -129,7 +195,7 @@ const Dashboard = () => {
   };
 
   const copyPublicLink = (publicId: string) => {
-    const url = `${window.location.origin}/q/${publicId}`;
+    const url = `${window.location.origin}/quiz/${publicId}`;
     navigator.clipboard.writeText(url);
     toast({
       title: "Link copiado!",
@@ -138,6 +204,19 @@ const Dashboard = () => {
   };
 
   const getQuizStats = (quizId: string) => {
+    // Verificar se estamos em modo demo
+    const { isDemoMode } = useAuth();
+    
+    if (isDemoMode) {
+      // Retornar estatísticas demo
+      return {
+        totalStarts: 142,
+        totalLeads: 85,
+        conversionRate: 60
+      };
+    }
+    
+    // Carregar dados reais para usuários autenticados
     const results = localDB.getQuizResults(quizId);
     const leads = localDB.getQuizLeads(quizId);
     
@@ -157,6 +236,40 @@ const Dashboard = () => {
         title: "Erro",
         description: "Não foi possível fazer logout. Tente novamente.",
         variant: "destructive",
+      });
+    }
+  };
+
+  const handleGenerateTestData = async () => {
+    try {
+      await generateTestAnalyticsData();
+      toast({
+        title: "Dados de teste gerados!",
+        description: "Analytics de teste foram criados com sucesso."
+      });
+    } catch (error) {
+      console.error('Error generating test data:', error);
+      toast({
+        title: "Erro ao gerar dados",
+        description: "Não foi possível gerar os dados de teste.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleClearTestData = async () => {
+    try {
+      await clearTestAnalyticsData();
+      toast({
+        title: "Dados limpos!",
+        description: "Todos os dados de analytics foram removidos."
+      });
+    } catch (error) {
+      console.error('Error clearing test data:', error);
+      toast({
+        title: "Erro ao limpar dados",
+        description: "Não foi possível limpar os dados.",
+        variant: "destructive"
       });
     }
   };
@@ -202,6 +315,24 @@ const Dashboard = () => {
               <span className="text-muted-foreground">
                 Olá, {user?.user_metadata?.full_name || user?.email}
               </span>
+              <Button 
+                onClick={handleGenerateTestData}
+                variant="outline" 
+                className="gap-2"
+                size="sm"
+              >
+                <Database className="w-4 h-4" />
+                Gerar Dados Teste
+              </Button>
+              <Button 
+                onClick={handleClearTestData}
+                variant="outline" 
+                className="gap-2"
+                size="sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                Limpar Dados
+              </Button>
               <Button 
                 onClick={() => navigate('/app/settings')} 
                 variant="outline" 
@@ -365,7 +496,7 @@ const Dashboard = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => window.open(`/q/${quiz.publicId}`, '_blank')}
+                              onClick={() => window.open(`/quiz/${quiz.public_id || quiz.publicId}`, '_blank')}
                             >
                               <ExternalLink className="w-4 h-4 mr-1" />
                               Ver
@@ -373,7 +504,7 @@ const Dashboard = () => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => copyPublicLink(quiz.publicId)}
+                              onClick={() => copyPublicLink(quiz.public_id || quiz.publicId)}
                             >
                               <Copy className="w-4 h-4 mr-1" />
                               Copiar link

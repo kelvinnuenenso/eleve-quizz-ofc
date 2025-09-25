@@ -1,16 +1,21 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { PlanType } from '@/lib/planManager';
 import { localDB, type UserProfile } from '@/lib/localStorage';
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+  profile: UserProfile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<void>;
+  upgradePlan: (newPlan: PlanType) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,6 +23,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -62,33 +68,77 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('user_id', user.id)
         .single();
 
+      let userProfile: UserProfile;
+
       if (!existingProfile) {
         // Create profile in Supabase if it doesn't exist
-        await supabase
+        const newProfile = {
+          user_id: user.id,
+          email: user.email || '',
+          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+          avatar_url: user.user_metadata?.avatar_url,
+          plan: 'starter' as PlanType,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+
+        const { data: createdProfile } = await supabase
           .from('user_profiles')
-          .insert({
-            user_id: user.id,
-            display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
-            username: user.email?.split('@')[0],
-          });
+          .insert(newProfile)
+          .select()
+          .single();
+
+        userProfile = createdProfile || {
+          id: user.id,
+          email: user.email || '',
+          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+          avatar_url: user.user_metadata?.avatar_url,
+          plan: 'starter' as PlanType,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+      } else {
+        userProfile = {
+          id: existingProfile.user_id,
+          email: existingProfile.email,
+          name: existingProfile.name,
+          avatar_url: existingProfile.avatar_url,
+          plan: existingProfile.plan || 'starter',
+          plan_expires_at: existingProfile.plan_expires_at,
+          created_at: existingProfile.created_at,
+          updated_at: existingProfile.updated_at,
+        };
       }
 
+      setProfile(userProfile);
+
       // Sync with localStorage for offline access
-      const profile: UserProfile = {
+      const legacyProfile = {
         id: user.id,
-        name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
-        email: user.email || '',
-        createdAt: new Date().toISOString(),
-        plan: 'free',
+        name: userProfile.name || 'Usuário',
+        email: userProfile.email,
+        createdAt: userProfile.created_at,
+        plan: 'free', // Keep legacy format for compatibility
         settings: {
           theme: 'light',
           notifications: true,
           autoSave: true
         }
       };
-      localDB.saveUserProfile(profile);
+      localDB.saveUserProfile(legacyProfile);
     } catch (error) {
       console.error('Error syncing user profile:', error);
+      // Fallback to basic profile
+      const fallbackProfile: UserProfile = {
+        id: user.id,
+        email: user.email || '',
+        name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+        avatar_url: user.user_metadata?.avatar_url,
+        plan: 'starter',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      setProfile(fallbackProfile);
     }
   };
 
@@ -145,8 +195,61 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut();
       // Clear localStorage data on sign out
       localDB.clearUserProfile();
+      setProfile(null);
     } catch (error) {
       console.error('Error signing out:', error);
+    }
+  };
+
+  const updateProfile = async (updates: Partial<UserProfile>) => {
+    if (!user || !profile) return;
+
+    try {
+      const updatedProfile = {
+        ...updates,
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('user_profiles')
+        .update(updatedProfile)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setProfile(prev => prev ? { ...prev, ...updatedProfile } : null);
+      toast.success('Perfil atualizado com sucesso!');
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Erro ao atualizar perfil');
+    }
+  };
+
+  const upgradePlan = async (newPlan: PlanType) => {
+    if (!user || !profile) return;
+
+    try {
+      const planExpiry = new Date();
+      planExpiry.setMonth(planExpiry.getMonth() + 1); // 1 mês de validade
+
+      const updates = {
+        plan: newPlan,
+        plan_expires_at: planExpiry.toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      const { error } = await supabase
+        .from('user_profiles')
+        .update(updates)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      toast.success(`Plano atualizado para ${newPlan.toUpperCase()}!`);
+    } catch (error) {
+      console.error('Error upgrading plan:', error);
+      toast.error('Erro ao atualizar plano');
     }
   };
 
@@ -154,11 +257,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{
       user,
       session,
+      profile,
       loading,
       signIn,
       signUp,
       signInWithGoogle,
-      signOut
+      signOut,
+      updateProfile,
+      upgradePlan,
     }}>
       {children}
     </AuthContext.Provider>

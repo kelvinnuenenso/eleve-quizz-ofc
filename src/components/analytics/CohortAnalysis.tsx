@@ -43,79 +43,20 @@ export const CohortAnalysis = ({ quizId }: CohortAnalysisProps) => {
   const loadCohortData = async () => {
     setLoading(true);
     
-    // Simulate cohort data generation
-    const cohorts = cohortType === 'monthly' ? 6 : 12;
-    const periods = cohortType === 'monthly' ? 6 : 8;
+    // Carregar dados reais de coorte (vazios para novos usuários)
+    const emptyCohortData: CohortData[] = [];
     
-    const mockCohortData: CohortData[] = [];
-    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
-    
-    for (let cohortIndex = 0; cohortIndex < cohorts; cohortIndex++) {
-      const cohortDate = new Date();
-      if (cohortType === 'monthly') {
-        cohortDate.setMonth(cohortDate.getMonth() - cohortIndex);
-      } else {
-        cohortDate.setDate(cohortDate.getDate() - (cohortIndex * 7));
-      }
-      
-      const cohortName = cohortType === 'monthly' 
-        ? cohortDate.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })
-        : `Sem ${cohortDate.getDate()}/${cohortDate.getMonth() + 1}`;
-      
-      const initialUsers = Math.floor(Math.random() * 200) + 50;
-      
-      for (let period = 0; period < periods; period++) {
-        if (period <= cohortIndex) { // Only show data for periods that have passed
-          const retentionDecay = Math.pow(0.85, period); // 15% decay per period
-          const randomVariation = 0.8 + Math.random() * 0.4; // ±20% variation
-          const retained = Math.floor(initialUsers * retentionDecay * randomVariation);
-          const retentionRate = period === 0 ? 100 : (retained / initialUsers) * 100;
-          
-          mockCohortData.push({
-            cohort: cohortName,
-            period: `${cohortType === 'monthly' ? 'Mês' : 'Semana'} ${period}`,
-            users: period === 0 ? initialUsers : retained,
-            retained,
-            retentionRate,
-            color: colors[cohortIndex % colors.length]
-          });
-        }
-      }
-    }
-
-    // Calculate metrics
-    const totalUsers = mockCohortData
-      .filter(d => d.period.includes('0'))
-      .reduce((sum, d) => sum + d.users, 0);
-    
-    const avgRetention = mockCohortData
-      .filter(d => d.period.includes('1'))
-      .reduce((sum, d, _, arr) => sum + d.retentionRate / arr.length, 0);
-    
-    const cohortRetentions = mockCohortData
-      .filter(d => d.period.includes('1'))
-      .reduce((acc, d) => {
-        acc[d.cohort] = d.retentionRate;
-        return acc;
-      }, {} as Record<string, number>);
-    
-    const bestCohort = Object.entries(cohortRetentions)
-      .sort(([, a], [, b]) => b - a)[0]?.[0] || '';
-    
-    const worstCohort = Object.entries(cohortRetentions)
-      .sort(([, a], [, b]) => a - b)[0]?.[0] || '';
-
-    const mockMetrics: CohortMetrics = {
-      totalUsers,
-      avgRetention,
-      bestCohort,
-      worstCohort,
-      trend: Math.random() > 0.5 ? 'up' : Math.random() > 0.5 ? 'down' : 'stable',
-      trendPercentage: Math.random() * 20 + 5
+    const emptyMetrics: CohortMetrics = {
+      totalUsers: 0,
+      avgRetention: 0,
+      bestCohort: '',
+      worstCohort: '',
+      trend: 'stable',
+      trendPercentage: 0
     };
 
-    setCohortData(mockCohortData);
-    setMetrics(mockMetrics);
+    setCohortData(emptyCohortData);
+    setMetrics(emptyMetrics);
     setLoading(false);
   };
 
@@ -196,7 +137,7 @@ export const CohortAnalysis = ({ quizId }: CohortAnalysisProps) => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={cohortType} onValueChange={(value: any) => setCohortType(value)}>
+          <Select value={cohortType} onValueChange={(value: string) => setCohortType(value)}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -205,7 +146,7 @@ export const CohortAnalysis = ({ quizId }: CohortAnalysisProps) => {
               <SelectItem value="monthly">Mensal</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={timeRange} onValueChange={(value: any) => setTimeRange(value)}>
+          <Select value={timeRange} onValueChange={(value: string) => setTimeRange(value)}>
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>

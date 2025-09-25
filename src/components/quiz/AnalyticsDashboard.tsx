@@ -7,6 +7,8 @@ import { Progress } from '@/components/ui/progress';
 import { localDB } from '@/lib/localStorage';
 import { realAnalytics } from '@/lib/analytics';
 import { supabaseSync } from '@/lib/supabaseSync';
+import { useAuth } from '@/components/SimpleAuthProvider';
+import { DEMO_ANALYTICS } from '@/lib/demoData';
 import { 
   BarChart3, 
   Users, 
@@ -77,15 +79,62 @@ export function AnalyticsDashboard({ quizId }: AnalyticsProps) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('7d');
+  const { isDemoMode } = useAuth();
 
   useEffect(() => {
     loadAnalytics();
-  }, [quizId, dateRange]);
+  }, [quizId, dateRange, isDemoMode]);
 
   const loadAnalytics = async () => {
     try {
       setLoading(true);
       
+      if (isDemoMode) {
+        // Usar dados demo
+        const demoAnalytics = DEMO_ANALYTICS;
+        
+        setAnalytics({
+          totalViews: demoAnalytics.overview.totalViews,
+          totalStarts: demoAnalytics.overview.totalStarts,
+          totalCompletions: demoAnalytics.overview.totalCompletions,
+          totalLeads: demoAnalytics.overview.totalLeads,
+          conversionRate: demoAnalytics.overview.conversionRate,
+          completionRate: Math.round((demoAnalytics.overview.totalCompletions / demoAnalytics.overview.totalStarts) * 100),
+          avgCompletionTime: demoAnalytics.overview.averageCompletionTime,
+          dailyData: demoAnalytics.timeline.last30Days.views.slice(-7).map((views, index) => ({
+            date: new Date(Date.now() - (6 - index) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            views,
+            starts: demoAnalytics.timeline.last30Days.starts.slice(-7)[index],
+            completions: demoAnalytics.timeline.last30Days.completions.slice(-7)[index],
+            leads: Math.round(demoAnalytics.timeline.last30Days.completions.slice(-7)[index] * 0.6)
+          })),
+          outcomeDistribution: [
+            { name: 'Iniciante', value: 35, color: '#EF4444' },
+            { name: 'Intermediário', value: 45, color: '#F59E0B' },
+            { name: 'Avançado', value: 20, color: '#10B981' }
+          ],
+          deviceBreakdown: [
+            { device: 'Mobile', count: demoAnalytics.demographic.deviceBreakdown.mobile, percentage: demoAnalytics.demographic.deviceBreakdown.mobile },
+            { device: 'Desktop', count: demoAnalytics.demographic.deviceBreakdown.desktop, percentage: demoAnalytics.demographic.deviceBreakdown.desktop },
+            { device: 'Tablet', count: demoAnalytics.demographic.deviceBreakdown.tablet, percentage: demoAnalytics.demographic.deviceBreakdown.tablet }
+          ],
+          timeSpentData: [
+            { question: 'Pergunta 1', avgTime: 45 },
+            { question: 'Pergunta 2', avgTime: 62 },
+            { question: 'Pergunta 3', avgTime: 38 },
+            { question: 'Pergunta 4', avgTime: 55 }
+          ],
+          dropoffPoints: [
+            { step: 1, dropoffRate: 15 },
+            { step: 2, dropoffRate: 25 },
+            { step: 3, dropoffRate: 35 },
+            { step: 4, dropoffRate: 20 }
+          ]
+        });
+        return;
+      }
+      
+      // Código original para usuários reais
       // 1. Try to get data from Supabase first (PRODUCTION DATA)
       const dateStart = new Date(Date.now() - (parseInt(dateRange) || 7) * 24 * 60 * 60 * 1000).toISOString();
       const supabaseData = await supabaseSync.getAnalyticsFromSupabase(quizId, dateStart);
@@ -106,18 +155,18 @@ export function AnalyticsDashboard({ quizId }: AnalyticsProps) {
           // Process raw Supabase data into analytics format
           const { events, sessions } = supabaseData;
           const totalStarts = sessions.length;
-          const totalCompletions = sessions.filter((s: any) => s.completed_at).length;
-          const leadEvents = events.filter((e: any) => e.event_type === 'lead_capture');
+          const totalCompletions = sessions.filter((s: Record<string, unknown>) => s.completed_at).length;
+          const leadEvents = events.filter((e: Record<string, unknown>) => e.event_type === 'lead_capture');
           const totalLeads = leadEvents.length;
           
           analyticsData = {
-            totalViews: events.filter((e: any) => e.event_type === 'quiz_view').length,
+            totalViews: events.filter((e: Record<string, unknown>) => e.event_type === 'quiz_view').length,
             totalStarts,
             totalCompletions,
             totalLeads,
             conversionRate: totalStarts > 0 ? Math.round((totalLeads / totalStarts) * 100) : 0,
             completionRate: totalStarts > 0 ? Math.round((totalCompletions / totalStarts) * 100) : 0,
-            avgCompletionTime: sessions.length > 0 ? sessions.reduce((acc: number, s: any) => acc + (s.completion_time || 0), 0) / sessions.length : 0,
+            avgCompletionTime: sessions.length > 0 ? sessions.reduce((acc: number, s: Record<string, unknown>) => acc + (Number(s.completion_time) || 0), 0) / sessions.length : 0,
             deviceBreakdown: [
               { device: 'Mobile', count: 0, percentage: 0 },
               { device: 'Desktop', count: 0, percentage: 0 }

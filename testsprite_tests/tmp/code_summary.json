@@ -1,0 +1,105 @@
+{
+  "tech_stack": [
+    "TypeScript",
+    "React",
+    "Vite",
+    "Node.js",
+    "Supabase",
+    "shadcn/ui",
+    "Radix UI",
+    "TanStack Query",
+    "Recharts",
+    "Tailwind CSS"
+  ],
+  "features": [
+    {
+      "name": "Quiz Builder",
+      "description": "Visual quiz editor with drag-and-drop functionality",
+      "files": [
+        "src/pages/QuizEditor.tsx",
+        "src/components/quiz/visual-editor/ComponentLibrary.tsx",
+        "src/components/quiz/QuizBuilder.tsx"
+      ]
+    },
+    {
+      "name": "Quiz Runner",
+      "description": "Public quiz execution interface",
+      "files": [
+        "src/pages/QuizRunner.tsx",
+        "src/components/quiz/QuizRunner.tsx"
+      ]
+    },
+    {
+      "name": "Analytics Dashboard",
+      "description": "Comprehensive analytics with charts and metrics",
+      "files": [
+        "src/components/analytics/AdvancedAnalyticsDashboard.tsx",
+        "src/components/analytics/ExecutiveDashboard.tsx",
+        "src/components/analytics/ConversionFunnelAnalyzer.tsx",
+        "src/components/analytics/CohortAnalysis.tsx",
+        "src/components/quiz/AnalyticsDashboard.tsx"
+      ]
+    },
+    {
+      "name": "Authentication System",
+      "description": "User authentication and authorization",
+      "files": [
+        "src/components/SimpleAuthProvider.tsx",
+        "src/lib/auth.ts"
+      ]
+    },
+    {
+      "name": "Supabase Integration",
+      "description": "Database operations and real-time sync",
+      "files": [
+        "src/integrations/supabase/client.ts",
+        "src/lib/supabaseSync.ts",
+        "server.cjs"
+      ]
+    },
+    {
+      "name": "Template System",
+      "description": "Pre-built quiz templates for different use cases",
+      "files": [
+        "src/lib/expandedTemplates.ts",
+        "src/pages/api/templates/index.ts",
+        "src/components/TemplateSelector.tsx"
+      ]
+    },
+    {
+      "name": "Usage Tracking",
+      "description": "Monitor usage limits and plan restrictions",
+      "files": [
+        "src/lib/usageTracker.ts",
+        "src/components/UsageIndicator.tsx",
+        "src/pages/api/usage/check.ts"
+      ]
+    },
+    {
+      "name": "API Layer",
+      "description": "RESTful API endpoints for quiz operations",
+      "files": [
+        "src/pages/api/analytics/quiz/[id].ts",
+        "src/pages/api/analytics/dashboard.ts",
+        "src/lib/apiClient.ts",
+        "server.cjs"
+      ]
+    },
+    {
+      "name": "Flow Analytics",
+      "description": "User flow and conversion tracking",
+      "files": [
+        "src/components/quiz/flow/FlowAnalytics.tsx",
+        "src/lib/analytics.ts"
+      ]
+    },
+    {
+      "name": "Error Handling",
+      "description": "Centralized error handling and logging",
+      "files": [
+        "src/lib/errorHandling.ts",
+        "src/lib/logger.ts"
+      ]
+    }
+  ]
+}

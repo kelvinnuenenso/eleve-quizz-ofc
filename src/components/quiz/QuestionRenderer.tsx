@@ -13,9 +13,9 @@ import { WrittenResponseField } from './WrittenResponseField';
 
 interface QuestionRendererProps {
   question: Question;
-  value?: any;
-  onChange: (value: any) => void;
-  theme?: any;
+  value?: unknown;
+  onChange: (value: unknown) => void;
+  theme?: Record<string, unknown>;
   component?: Component; // Para acessar configurações de resposta escrita
   writtenValue?: string;
   onWrittenChange?: (value: string) => void;

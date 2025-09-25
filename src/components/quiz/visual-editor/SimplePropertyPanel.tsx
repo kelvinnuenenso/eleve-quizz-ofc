@@ -358,13 +358,13 @@ export function SimplePropertyPanel({
                     </div>
                     
                     <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {(component.content.options || []).map((option: any, index: number) => (
+                      {(component.content.options || []).map((option: Record<string, unknown>, index: number) => (
                         <div key={option.id || index} className="p-2 border rounded-lg bg-muted/30">
                           <div className="space-y-1">
                             <Input
                               value={option.label || ''}
                               onChange={(e) => {
-                                const newOptions = [...(component.content.options || [])];
+                                const newOptions = (component.content.options || []).filter((_: unknown, i: number) => i !== index);
                                 newOptions[index] = { ...newOptions[index], label: e.target.value };
                                 onUpdateComponent({
                                   content: { ...component.content, options: newOptions }
@@ -392,7 +392,7 @@ export function SimplePropertyPanel({
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => {
-                                  const newOptions = (component.content.options || []).filter((_: any, i: number) => i !== index);
+                                  const newOptions = (component.content.options || []).filter((_: unknown, i: number) => i !== index);
                                   onUpdateComponent({
                                     content: { ...component.content, options: newOptions }
                                   });

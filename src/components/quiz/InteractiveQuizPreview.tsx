@@ -40,7 +40,7 @@ export function InteractiveQuizPreview({
     }
   };
 
-  const handleAnswerSelect = (componentId: string, value: any) => {
+  const handleAnswerSelect = (componentId: string, value: unknown) => {
     setSelectedAnswers(prev => ({
       ...prev,
       [componentId]: value
@@ -105,7 +105,7 @@ export function InteractiveQuizPreview({
             )}
             
             <div className="grid gap-3">
-              {options.map((option: any, index: number) => (
+              {options.map((option: Record<string, unknown>, index: number) => (
                 <Button
                   key={option.id || index}
                   variant="outline"

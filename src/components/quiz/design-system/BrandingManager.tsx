@@ -80,10 +80,10 @@ export function BrandingManager({ config, onChange, onPreview }: BrandingManager
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [socialImageFile, setSocialImageFile] = useState<File | null>(null);
 
-  const updateConfig = (path: string, value: any) => {
+  const updateConfig = (path: string, value: unknown) => {
     const newConfig = { ...config };
     const keys = path.split('.');
-    let current: any = newConfig;
+    let current: Record<string, unknown> = newConfig;
     
     for (let i = 0; i < keys.length - 1; i++) {
       current = current[keys[i]];

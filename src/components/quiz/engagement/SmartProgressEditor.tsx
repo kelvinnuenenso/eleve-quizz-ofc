@@ -56,7 +56,7 @@ export function SmartProgressEditor({ theme, onUpdate, quizId }: SmartProgressEd
 
   const config = getSmartProgressConfig();
 
-  const updatePhase = (phase: 'start' | 'middle' | 'end', updates: any) => {
+  const updatePhase = (phase: 'start' | 'middle' | 'end', updates: Record<string, unknown>) => {
     handleUpdate({
       [`smartProgress${phase.charAt(0).toUpperCase() + phase.slice(1)}Color`]: updates.color,
       [`smartProgress${phase.charAt(0).toUpperCase() + phase.slice(1)}Speed`]: updates.speed,

@@ -51,11 +51,11 @@ export function ConditionalProgress({ theme, onUpdate, quizId }: ConditionalProg
     onUpdate({ ...theme, ...updates });
   };
 
-  const updateUrgencyMessage = (key: string, value: any) => {
+  const updateUrgencyMessage = (key: string, value: unknown) => {
     handleUpdate({ [`urgency${key}`]: value });
   };
 
-  const updateExitIntent = (key: string, value: any) => {
+  const updateExitIntent = (key: string, value: unknown) => {
     handleUpdate({ [`exitIntent${key}`]: value });
   };
 

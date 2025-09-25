@@ -7,7 +7,7 @@ import { GitBranch, Check, X } from 'lucide-react';
 interface ConditionNodeData {
   title: string;
   subtitle?: string;
-  conditions?: any[];
+  conditions?: Record<string, unknown>[];
   color?: string;
 }
 
