@@ -15,6 +15,23 @@ export default defineConfig(({ mode }) => ({
     watch: {
       usePolling: true,
     },
+    proxy: {
+      '/api/consolidated': {
+        target: 'http://localhost:3002',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api/quizzes': {
+        target: 'http://localhost:3002',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+      },
+    },
   },
   plugins: [
     react(),
