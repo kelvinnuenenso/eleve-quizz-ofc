@@ -57,7 +57,7 @@ const Dashboard = () => {
     try {
       if (user && session) {
         try {
-          const response = await fetch('/api/quizzes', {
+          const response = await fetch('/api/consolidated/quizzes', {
             headers: {
               'Authorization': `Bearer ${session.access_token}`,
               'Content-Type': 'application/json'
@@ -90,7 +90,7 @@ const Dashboard = () => {
     setIsCreating(true);
     try {
       const newQuizData = {
-        name: 'Novo Quiz',
+        title: 'Novo Quiz',
         description: 'Descreva seu quiz aqui...',
         status: 'draft',
         theme: {
@@ -130,7 +130,10 @@ const Dashboard = () => {
 
       if (user && session) {
         try {
-          const response = await fetch('/api/quizzes', {
+          console.log('User authenticated:', { userId: user.id, hasToken: !!session.access_token });
+          console.log('Creating quiz with data:', newQuizData);
+          
+          const response = await fetch('/api/consolidated/quizzes', {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${session.access_token}`,
@@ -138,6 +141,8 @@ const Dashboard = () => {
             },
             body: JSON.stringify(newQuizData)
           });
+          
+          console.log('API Response status:', response.status);
 
           if (response.ok) {
             const data = await response.json();
@@ -152,6 +157,7 @@ const Dashboard = () => {
             return;
           } else {
             const errorData = await response.json();
+            console.error('API Error Response:', errorData);
             throw new Error(errorData.error || 'Erro ao criar quiz');
           }
         } catch (apiError) {
@@ -163,6 +169,7 @@ const Dashboard = () => {
           });
         }
       } else {
+        console.log('User not authenticated:', { user: !!user, session: !!session });
         // Fallback to localStorage for non-authenticated users
         const newQuiz: Quiz = {
           id: crypto.randomUUID(),

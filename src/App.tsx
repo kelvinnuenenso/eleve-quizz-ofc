@@ -20,6 +20,7 @@ import QuizEditor from "./pages/QuizEditor";
 import QuizRunner from "./pages/QuizRunner";
 import ResultPage from "./pages/ResultPage";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/auth/callback";
 import Settings from "./pages/Settings";
 import Templates from "./pages/Templates";
 import NotFound from "./pages/NotFound";
@@ -46,6 +47,7 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/app" element={
           <ProtectedRoute>
             <Dashboard />

@@ -4,102 +4,415 @@
     "React",
     "Vite",
     "Node.js",
+    "Express.js",
     "Supabase",
-    "shadcn/ui",
+    "PostgreSQL",
+    "Tailwind CSS",
     "Radix UI",
-    "TanStack Query",
-    "Recharts",
-    "Tailwind CSS"
+    "Shadcn/ui",
+    "React Hook Form",
+    "Zod",
+    "Lucide React",
+    "Sonner",
+    "Next.js API Routes",
+    "CORS",
+    "dotenv"
   ],
   "features": [
     {
-      "name": "Quiz Builder",
-      "description": "Visual quiz editor with drag-and-drop functionality",
+      "name": "User Authentication",
+      "description": "Complete authentication system with sign up, sign in, Google OAuth, and user profile management using Supabase Auth",
       "files": [
-        "src/pages/QuizEditor.tsx",
-        "src/components/quiz/visual-editor/ComponentLibrary.tsx",
-        "src/components/quiz/QuizBuilder.tsx"
-      ]
+        "src/hooks/useAuth.tsx",
+        "src/integrations/supabase/client.ts",
+        "src/pages/Auth.tsx"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "User Authentication API",
+          "version": "1.0.0"
+        },
+        "paths": {
+          "/auth/signin": {
+            "post": {
+              "summary": "Sign in user",
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "email": { "type": "string" },
+                        "password": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     {
-      "name": "Quiz Runner",
-      "description": "Public quiz execution interface",
+      "name": "Quiz Management",
+      "description": "Complete CRUD operations for quizzes including creation, editing, publishing, and deletion with advanced features like branching logic and gamification",
       "files": [
+        "src/pages/api/quizzes/index.ts",
+        "src/pages/api/quizzes/[id].ts",
+        "src/pages/Dashboard.tsx",
+        "src/pages/QuizEditor.tsx",
+        "src/types/quiz.ts"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "Quiz Management API",
+          "version": "1.0.0"
+        },
+        "paths": {
+          "/api/quizzes": {
+            "get": {
+              "summary": "List user quizzes",
+              "parameters": [
+                {
+                  "name": "page",
+                  "in": "query",
+                  "schema": { "type": "integer" }
+                },
+                {
+                  "name": "limit",
+                  "in": "query",
+                  "schema": { "type": "integer" }
+                }
+              ]
+            },
+            "post": {
+              "summary": "Create new quiz",
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "description": { "type": "string" },
+                        "questions": { "type": "array" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/quizzes/{id}": {
+            "get": {
+              "summary": "Get quiz by ID",
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "string" }
+                }
+              ]
+            },
+            "put": {
+              "summary": "Update quiz",
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "string" }
+                }
+              ]
+            },
+            "delete": {
+              "summary": "Delete quiz",
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Quiz Responses",
+      "description": "System for collecting and managing quiz responses with scoring and analytics",
+      "files": [
+        "src/pages/api/quizzes/[id]/responses.ts",
         "src/pages/QuizRunner.tsx",
-        "src/components/quiz/QuizRunner.tsx"
-      ]
+        "src/pages/ResultPage.tsx"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "Quiz Responses API",
+          "version": "1.0.0"
+        },
+        "paths": {
+          "/api/quizzes/{id}/responses": {
+            "post": {
+              "summary": "Submit quiz response",
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "string" }
+                }
+              ],
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "answers": { "type": "array" },
+                        "score": { "type": "number" },
+                        "completedAt": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "get": {
+              "summary": "Get quiz responses",
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "string" }
+                }
+              ]
+            }
+          }
+        }
+      }
     },
     {
       "name": "Analytics Dashboard",
-      "description": "Comprehensive analytics with charts and metrics",
+      "description": "Comprehensive analytics system with advanced metrics, A/B testing, and detailed reporting",
       "files": [
+        "src/pages/api/analytics/quiz/[id].ts",
         "src/components/analytics/AdvancedAnalyticsDashboard.tsx",
-        "src/components/analytics/ExecutiveDashboard.tsx",
-        "src/components/analytics/ConversionFunnelAnalyzer.tsx",
-        "src/components/analytics/CohortAnalysis.tsx",
+        "src/components/analytics/ABTestingManager.tsx",
         "src/components/quiz/AnalyticsDashboard.tsx"
-      ]
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "Analytics API",
+          "version": "1.0.0"
+        },
+        "paths": {
+          "/api/analytics/quiz/{id}": {
+            "get": {
+              "summary": "Get quiz analytics",
+              "parameters": [
+                {
+                  "name": "id",
+                  "in": "path",
+                  "required": true,
+                  "schema": { "type": "string" }
+                }
+              ],
+              "responses": {
+                "200": {
+                  "description": "Analytics data",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "overview": { "type": "object" },
+                          "scoreDistribution": { "type": "array" },
+                          "responsesTrend": { "type": "array" },
+                          "questionAnalysis": { "type": "array" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     {
-      "name": "Authentication System",
-      "description": "User authentication and authorization",
+      "name": "User Profile Management",
+      "description": "User profile system with plan management, usage tracking, and settings",
       "files": [
-        "src/components/SimpleAuthProvider.tsx",
-        "src/lib/auth.ts"
-      ]
+        "src/lib/supabaseApi.ts",
+        "src/lib/localStorage.ts",
+        "src/types/user.ts",
+        "src/pages/Settings.tsx"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "User Profile API",
+          "version": "1.0.0"
+        },
+        "paths": {
+          "/api/user/profile": {
+            "get": {
+              "summary": "Get user profile"
+            },
+            "put": {
+              "summary": "Update user profile",
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "name": { "type": "string" },
+                        "email": { "type": "string" },
+                        "plan": { "type": "string" },
+                        "settings": { "type": "object" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     {
-      "name": "Supabase Integration",
-      "description": "Database operations and real-time sync",
+      "name": "Consolidated API Server",
+      "description": "Express.js server that consolidates all API endpoints for production deployment on Vercel",
       "files": [
-        "src/integrations/supabase/client.ts",
-        "src/lib/supabaseSync.ts",
-        "server.cjs"
-      ]
+        "consolidated-server.cjs",
+        "api-consolidated-main.cjs",
+        "api-consolidated-quizzes.cjs"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "Consolidated API Server",
+          "version": "1.0.0"
+        },
+        "paths": {
+          "/api/consolidated/health": {
+            "get": {
+              "summary": "Health check endpoint",
+              "responses": {
+                "200": {
+                  "description": "Server status",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "status": { "type": "string" },
+                          "timestamp": { "type": "string" },
+                          "apis": { "type": "array" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/consolidated/quizzes": {
+            "all": {
+              "summary": "Consolidated quiz endpoints"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Custom Domain Management",
+      "description": "System for managing custom domains with DNS verification and SSL configuration",
+      "files": [
+        "src/components/settings/CustomDomainManager.tsx"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "Custom Domain API",
+          "version": "1.0.0"
+        },
+        "paths": {
+          "/api/domains": {
+            "post": {
+              "summary": "Add custom domain",
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "domain": { "type": "string" },
+                        "subdomain": { "type": "string" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     {
       "name": "Template System",
-      "description": "Pre-built quiz templates for different use cases",
+      "description": "Pre-built quiz templates with various categories and customization options",
       "files": [
-        "src/lib/expandedTemplates.ts",
-        "src/pages/api/templates/index.ts",
-        "src/components/TemplateSelector.tsx"
-      ]
-    },
-    {
-      "name": "Usage Tracking",
-      "description": "Monitor usage limits and plan restrictions",
-      "files": [
-        "src/lib/usageTracker.ts",
-        "src/components/UsageIndicator.tsx",
-        "src/pages/api/usage/check.ts"
-      ]
-    },
-    {
-      "name": "API Layer",
-      "description": "RESTful API endpoints for quiz operations",
-      "files": [
-        "src/pages/api/analytics/quiz/[id].ts",
-        "src/pages/api/analytics/dashboard.ts",
-        "src/lib/apiClient.ts",
-        "server.cjs"
-      ]
-    },
-    {
-      "name": "Flow Analytics",
-      "description": "User flow and conversion tracking",
-      "files": [
-        "src/components/quiz/flow/FlowAnalytics.tsx",
-        "src/lib/analytics.ts"
-      ]
-    },
-    {
-      "name": "Error Handling",
-      "description": "Centralized error handling and logging",
-      "files": [
-        "src/lib/errorHandling.ts",
-        "src/lib/logger.ts"
-      ]
+        "src/pages/Templates.tsx",
+        "src/lib/expandedTemplates.ts"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "Template System API",
+          "version": "1.0.0"
+        },
+        "paths": {
+          "/api/templates": {
+            "get": {
+              "summary": "Get available templates",
+              "responses": {
+                "200": {
+                  "description": "List of templates",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": { "type": "string" },
+                            "name": { "type": "string" },
+                            "category": { "type": "string" },
+                            "description": { "type": "string" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }

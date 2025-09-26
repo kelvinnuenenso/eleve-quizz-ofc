@@ -1,9 +1,10 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { PlanType } from '@/lib/planManager';
 import { localDB, type UserProfile } from '@/lib/localStorage';
+import { syncManager } from '@/lib/syncManager';
 
 interface AuthContextType {
   user: User | null;
@@ -126,6 +127,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       };
       localDB.saveUserProfile(legacyProfile);
+      
+      // Trigger full data sync if needed
+      if (syncManager.shouldSync()) {
+        syncManager.syncUserData(user.id).catch(error => {
+          console.error('Background sync failed:', error);
+        });
+      }
+      
     } catch (error) {
       console.error('Error syncing user profile:', error);
       // Fallback to basic profile
@@ -156,7 +165,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     try {
-      const redirectUrl = `${window.location.origin}/app`;
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      const redirectUrl = `${siteUrl}/dashboard`;
       
       const { error } = await supabase.auth.signUp({
         email,
@@ -176,7 +186,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithGoogle = async () => {
     try {
-      const redirectUrl = `${window.location.origin}/app`;
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+      const redirectUrl = `${siteUrl}/auth/callback`;
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',

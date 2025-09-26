@@ -9,21 +9,48 @@
       }
     },
     {
-      "src": "src/pages/api/**/*.ts",
-      "use": "@vercel/node"
+      "src": "consolidated-server.cjs",
+      "use": "@vercel/node",
+      "config": {
+        "maxDuration": 30
+      }
     }
   ],
   "routes": [
     {
+      "src": "/api/consolidated/(.*)",
+      "dest": "/consolidated-server.cjs"
+    },
+    {
+      "src": "/api/health",
+      "dest": "/consolidated-server.cjs"
+    },
+    {
+      "src": "/api/quiz/(.*)",
+      "dest": "/consolidated-server.cjs"
+    },
+    {
       "src": "/api/(.*)",
-      "dest": "/src/pages/api/$1"
+      "dest": "/consolidated-server.cjs"
     },
     {
       "handle": "filesystem"
     },
     {
+      "src": "/q/([^/]+)",
+      "dest": "/index.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "consolidated-server.cjs": {
+      "maxDuration": 30
+    }
+  }
 }

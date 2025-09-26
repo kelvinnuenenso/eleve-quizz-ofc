@@ -8,29 +8,95 @@ const fs = require('fs');
 const path = require('path');
 
 const app = express();
-const PORT = process.env.CONSOLIDATED_PORT || 3002;
+const PORT = process.env.PORT || process.env.CONSOLIDATED_PORT || 3002;
 
-// Configuração do Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('❌ Variáveis de ambiente do Supabase não configuradas!');
-  process.exit(1);
+// Validação de ambiente
+function validateEnvironment() {
+  const required = {
+    VITE_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+    VITE_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY
+  };
+  
+  const missing = Object.entries(required)
+    .filter(([key, value]) => !value)
+    .map(([key]) => key);
+  
+  if (missing.length > 0) {
+    console.error('❌ Variáveis de ambiente obrigatórias não configuradas:');
+    missing.forEach(key => console.error(`  - ${key}`));
+    process.exit(1);
+  }
+  
+  return required;
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const env = validateEnvironment();
+const supabase = createClient(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_PUBLISHABLE_KEY);
 
-// Middleware
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    version: process.env.npm_package_version || '1.0.0'
+  });
+});
+
+// Configuração de CORS melhorada
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:8080',
+  'https://quiz-lift-off-76.vercel.app',
+  /\.vercel\.app$/,
+  ...(process.env.ALLOWED_ORIGINS?.split(',').filter(Boolean) || [])
+];
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:8080',
-    'https://nome-do-projeto.vercel.app',
-    /\.vercel\.app$/
-  ],
-  credentials: true
+  origin: (origin, callback) => {
+    // Permitir requisições sem origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (typeof allowedOrigin === 'string') {
+        return allowedOrigin === origin;
+      }
+      return allowedOrigin.test(origin);
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+
+// Middleware de tratamento de erro global
+app.use((err, req, res, next) => {
+  console.error('Global error handler:', err);
+  
+  if (err.message === 'Not allowed by CORS') {
+    return res.status(403).json({ error: 'CORS policy violation' });
+  }
+  
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  });
+});
+
+// Middleware para logs em produção
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+    next();
+  });
+}
 app.use(express.json());
 
 // Função para carregar e executar APIs consolidadas
@@ -169,18 +235,35 @@ app.use('*', (req, res) => {
   });
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor de APIs consolidadas rodando na porta ${PORT}`);
-  console.log(`📊 Endpoints disponíveis:`);
-  Object.keys(consolidatedAPIs).forEach(name => {
-    if (consolidatedAPIs[name]) {
-      console.log(`   ALL /api/consolidated/${name}`);
-    }
+// Iniciar servidor (apenas em desenvolvimento)
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor de APIs consolidadas rodando na porta ${PORT}`);
+    console.log(`📊 Endpoints disponíveis:`);
+    Object.keys(consolidatedAPIs).forEach(name => {
+      if (consolidatedAPIs[name]) {
+        console.log(`   ALL /api/consolidated/${name}`);
+      }
+    });
+    console.log(`   GET /api/consolidated/health`);
+    console.log(`🔗 Conectado ao Supabase: ${supabaseUrl}`);
   });
-  console.log(`   GET /api/consolidated/health`);
-  console.log(`🔗 Conectado ao Supabase: ${supabaseUrl}`);
-});
+}
+
+// Iniciar servidor apenas se não estiver sendo importado (desenvolvimento local)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor de APIs consolidadas rodando na porta ${PORT}`);
+    console.log('📊 Endpoints disponíveis:');
+    console.log('   ALL /api/consolidated/main');
+    console.log('   ALL /api/consolidated/quizzes');
+    console.log('   GET /api/health');
+    console.log(`🔗 Conectado ao Supabase: ${env.VITE_SUPABASE_URL}`);
+  });
+}
+
+// Exportar para Vercel
+module.exports = app;
 
 // Graceful shutdown
 process.on('SIGINT', () => {

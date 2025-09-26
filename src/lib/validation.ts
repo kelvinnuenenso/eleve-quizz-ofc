@@ -2,6 +2,18 @@ import { z } from 'zod';
 
 // ===== SCHEMAS BÁSICOS =====
 
+// Environment validation
+export const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  VITE_SUPABASE_URL: z.string().url('URL do Supabase inválida'),
+  VITE_SUPABASE_PUBLISHABLE_KEY: z.string().min(1, 'Chave pública do Supabase é obrigatória'),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'Chave de serviço do Supabase é obrigatória').optional(),
+  ALLOWED_ORIGINS: z.string().optional(),
+  RATE_LIMIT_WINDOW_MS: z.string().regex(/^\d+$/).transform(Number).default('900000'),
+  RATE_LIMIT_MAX_REQUESTS: z.string().regex(/^\d+$/).transform(Number).default('100'),
+  CACHE_TTL_SECONDS: z.string().regex(/^\d+$/).transform(Number).default('300')
+});
+
 export const QuestionTypeSchema = z.enum([
   'single',
   'multiple', 
@@ -216,8 +228,95 @@ export const safeGetResultData = (data: any) => {
     const validatedData = ResultSchema.parse(data);
     return {
       success: true,
-      data: validatedData
+      data: validatedData,
+      error: null
     };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof z.ZodError ? error.issues : 'Unknown validation error',
+      data: null
+    };
+  }
+};
+
+// ===== VALIDATION HELPER FUNCTIONS =====
+
+export function validateEnv() {
+  try {
+    return envSchema.parse(process.env);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      console.error('Environment validation failed:');
+      error.errors.forEach(err => {
+        console.error(`- ${err.path.join('.')}: ${err.message}`);
+      });
+    }
+    throw new Error('Invalid environment configuration');
+  }
+}
+
+export function validateRequest<T>(schema: z.ZodSchema<T>, data: unknown): T {
+  try {
+    return schema.parse(data);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const errorMessage = error.errors.map(err => 
+        `${err.path.join('.')}: ${err.message}`
+      ).join(', ');
+      throw new Error(`Validation failed: ${errorMessage}`);
+    }
+    throw error;
+  }
+}
+
+export function createValidationMiddleware<T>(schema: z.ZodSchema<T>) {
+  return (req: any, res: any, next: any) => {
+    try {
+      req.validatedData = validateRequest(schema, req.body);
+      next();
+    } catch (error) {
+      res.status(400).json({
+        error: 'Validation failed',
+        message: error instanceof Error ? error.message : 'Invalid request data'
+      });
+    }
+  };
+}
+
+// ===== API REQUEST SCHEMAS =====
+
+export const createQuizRequestSchema = z.object({
+  title: z.string().min(1, 'Título é obrigatório').max(200, 'Título muito longo'),
+  description: z.string().max(500, 'Descrição muito longa').optional(),
+  questions: z.array(QuestionSchema).min(1, 'Pelo menos uma pergunta é obrigatória'),
+  settings: QuizSettingsSchema.optional()
+});
+
+export const updateQuizRequestSchema = createQuizRequestSchema.partial();
+
+export const submitQuizRequestSchema = z.object({
+  quizId: z.string().uuid(),
+  answers: z.array(z.object({
+    questionId: z.string(),
+    answer: z.union([z.string(), z.array(z.string()), z.number()]),
+    points: z.number().min(0).default(0)
+  })),
+  timeSpent: z.number().min(0).optional(),
+  leadData: z.object({
+    name: z.string().min(1, 'Nome é obrigatório'),
+    email: z.string().email('Email inválido'),
+    phone: z.string().optional(),
+    company: z.string().optional()
+  }).optional()
+});
+
+// ===== TYPE EXPORTS =====
+
+export type ValidatedEnv = z.infer<typeof envSchema>;
+export type CreateQuizRequest = z.infer<typeof createQuizRequestSchema>;
+export type UpdateQuizRequest = z.infer<typeof updateQuizRequestSchema>;
+export type SubmitQuizRequest = z.infer<typeof submitQuizRequestSchema>;
   } catch (error) {
     console.error('Result data validation failed:', error);
     return {

@@ -17,10 +17,14 @@ export default function Auth() {
   const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      navigate('/app');
+    if (user && !loading) {
+      // Aguarda um pouco para garantir que a sessão foi totalmente estabelecida
+      const timer = setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,13 +58,27 @@ export default function Auth() {
             title: "Login realizado!",
             description: "Bem-vindo de volta!"
           });
-          // The useAuth hook will handle the session automatically
-          navigate('/app');
+          // Aguarda a sessão ser estabelecida antes de redirecionar
+          setTimeout(() => {
+            navigate('/dashboard', { replace: true });
+          }, 500);
         } else {
           console.error('Login error:', error);
+          let errorMessage = "Credenciais inválidas.";
+          
+          if (error.message?.includes('Invalid login credentials')) {
+            errorMessage = "Email ou senha incorretos.";
+          } else if (error.message?.includes('Email not confirmed')) {
+            errorMessage = "Por favor, confirme seu email antes de fazer login.";
+          } else if (error.message?.includes('Too many requests')) {
+            errorMessage = "Muitas tentativas. Tente novamente em alguns minutos.";
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+          
           toast({
             title: "Erro no login",
-            description: error.message || "Credenciais inválidas.",
+            description: errorMessage,
             variant: "destructive",
           });
         }

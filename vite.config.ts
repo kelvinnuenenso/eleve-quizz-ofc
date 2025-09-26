@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => ({
     port: 8080,
     hmr: {
       port: 8080,
-      host: "localhost",
+      host: "0.0.0.0",
       clientPort: 8080,
     },
     watch: {
@@ -42,25 +42,31 @@ export default defineConfig(({ mode }) => ({
     },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom'],
-    force: true
+    include: ['react', 'react-dom', '@supabase/supabase-js'],
+    force: mode === 'development'
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(mode)
   },
   build: {
     target: 'es2015',
+    minify: 'terser',
+    sourcemap: mode === 'development',
     outDir: 'dist',
     assetsDir: 'assets',
-    sourcemap: mode === 'development',
-    minify: mode === 'production' ? 'esbuild' : false,
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
           supabase: ['@supabase/supabase-js'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select']
+          ui: ['lucide-react', 'sonner', '@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select']
         }
+      }
+    },
+    terserOptions: {
+      compress: {
+        drop_console: mode === 'production',
+        drop_debugger: mode === 'production'
       }
     },
     chunkSizeWarningLimit: 1000

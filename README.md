@@ -1,73 +1,114 @@
-# Welcome to your Lovable project
+# Quiz Lift Off 76
 
-## Project info
+Um sistema completo de quiz interativo com autenticação, criação de quizzes personalizados e análise de resultados.
 
-**URL**: https://lovable.dev/projects/de84e2b7-8d48-4fb5-9d73-e60745359abf
+## 🚀 Funcionalidades
 
-## How can I edit this code?
+- **Autenticação completa** com Supabase (registro, login, recuperação de senha)
+- **Criação de quizzes** com editor visual de fluxo
+- **Sistema de pontuação** e análise de resultados
+- **Interface moderna** com shadcn/ui e Tailwind CSS
+- **API consolidada** para gerenciamento de dados
+- **Deploy otimizado** para Vercel
 
-There are several ways of editing your application.
+## 🛠️ Tecnologias
 
-**Use Lovable**
+- **Frontend**: React 18, TypeScript, Vite
+- **UI**: shadcn/ui, Tailwind CSS, Radix UI
+- **Backend**: Node.js, Express, Supabase
+- **Banco de dados**: PostgreSQL (Supabase)
+- **Autenticação**: Supabase Auth
+- **Deploy**: Vercel
+- **Ferramentas**: ESLint, PostCSS, Terser
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/de84e2b7-8d48-4fb5-9d73-e60745359abf) and start prompting.
+## 📦 Instalação e Desenvolvimento
 
-Changes made via Lovable will be committed automatically to this repo.
+### Pré-requisitos
+- Node.js 18.18+ 
+- npm ou yarn
+- Conta no Supabase
 
-**Use your preferred IDE**
+### Configuração Local
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+```bash
+# 1. Clone o repositório
+git clone https://github.com/kelvinnuenenso/quiz-lift-off-76.git
+cd quiz-lift-off-76
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+# 2. Instale as dependências
+npm install
 
-Follow these steps:
+# 3. Configure as variáveis de ambiente
+cp .env.example .env
+# Edite o arquivo .env com suas credenciais do Supabase
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 4. Inicie o servidor de desenvolvimento
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## 📁 Estrutura do Projeto
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```
+quiz-lift-off-76/
+├── src/
+│   ├── components/          # Componentes React reutilizáveis
+│   ├── pages/              # Páginas da aplicação
+│   ├── hooks/              # Custom hooks
+│   ├── lib/                # Utilitários e configurações
+│   └── types/              # Definições de tipos TypeScript
+├── public/                 # Arquivos estáticos
+├── supabase/              # Configurações do Supabase
+├── dist/                  # Build de produção
+└── docs/                  # Documentação
+```
 
-**Use GitHub Codespaces**
+## 🔧 Scripts Disponíveis
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+npm run dev          # Inicia servidor de desenvolvimento
+npm run build        # Gera build de produção
+npm run preview      # Preview do build de produção
+npm run lint         # Executa ESLint
+npm run type-check   # Verifica tipos TypeScript
+```
 
-## What technologies are used for this project?
+## 🚀 Deploy
 
-This project is built with:
+### Deploy para Vercel
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. **Configure as variáveis de ambiente no Vercel:**
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `NODE_ENV=production`
+   - `ALLOWED_ORIGINS=https://seu-dominio.vercel.app`
 
-## How can I deploy this project?
+2. **Configure URLs de redirecionamento no Supabase:**
+   - Site URL: `https://seu-dominio.vercel.app`
+   - Additional Redirect URLs: `https://seu-dominio.vercel.app/app`
 
-Simply open [Lovable](https://lovable.dev/projects/de84e2b7-8d48-4fb5-9d73-e60745359abf) and click on Share -> Publish.
+3. **Deploy automático:**
+   ```bash
+   git push origin main
+   ```
 
-## Can I connect a custom domain to my Lovable project?
+Para mais detalhes, consulte [DEPLOY-VERCEL.md](./DEPLOY-VERCEL.md) e [SUPABASE-PRODUCTION-CONFIG.md](./SUPABASE-PRODUCTION-CONFIG.md).
 
-Yes, you can!
+## 📚 Documentação
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- [Deploy para Vercel](./DEPLOY-VERCEL.md)
+- [Configuração do Supabase](./SUPABASE-PRODUCTION-CONFIG.md)
+- [API Documentation](./README-API.md)
+- [Checklist de Deploy](./DEPLOY-CHECKLIST.md)
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## 🤝 Contribuição
+
+1. Fork o projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## 📄 Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
