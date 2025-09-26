@@ -5,19 +5,19 @@
   "routes": [
     {
       "src": "/api/consolidated/(.*)",
-      "dest": "/consolidated-server.cjs"
+      "dest": "/api/consolidated.js"
     },
     {
       "src": "/api/health",
-      "dest": "/consolidated-server.cjs"
+      "dest": "/api/consolidated.js"
     },
     {
       "src": "/api/quiz/(.*)",
-      "dest": "/consolidated-server.cjs"
+      "dest": "/api/consolidated.js"
     },
     {
       "src": "/api/(.*)",
-      "dest": "/consolidated-server.cjs"
+      "dest": "/api/consolidated.js"
     },
     {
       "handle": "filesystem"
@@ -33,10 +33,5 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "functions": {
-    "consolidated-server.cjs": {
-      "maxDuration": 30
-    }
   }
 }
