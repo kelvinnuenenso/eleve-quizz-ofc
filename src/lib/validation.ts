@@ -104,6 +104,25 @@ export const QuizOutcomeSchema = z.object({
   redirectUrl: z.string().url().optional()
 });
 
+export const QuizSettingsSchema = z.object({
+  showProgress: z.boolean().optional(),
+  showQuestionNumbers: z.boolean().optional(),
+  allowBack: z.boolean().optional(),
+  randomizeQuestions: z.boolean().optional(),
+  timeLimit: z.number().min(0).optional(),
+  requireEmail: z.boolean().optional(),
+  requireName: z.boolean().optional(),
+  requirePhone: z.boolean().optional(),
+  collectLeads: z.boolean().optional(),
+  redirectUrl: z.string().url().optional(),
+  thankYouMessage: z.string().optional(),
+  socialSharing: z.boolean().optional(),
+  analytics: z.object({
+    enabled: z.boolean().optional(),
+    trackingId: z.string().optional()
+  }).optional()
+}).optional();
+
 // Quiz validation schema (atualizado)
 export const QuizSchema = z.object({
   id: z.string().uuid(),

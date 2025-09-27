@@ -4,6 +4,7 @@ import path from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: "./",
   server: {
     host: "localhost",
     port: 8080,
@@ -15,16 +16,6 @@ export default defineConfig(({ mode }) => ({
       usePolling: true,
     },
     proxy: {
-      '/api/consolidated': {
-        target: 'http://localhost:3002',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/api/quizzes': {
-        target: 'http://localhost:3002',
-        changeOrigin: true,
-        secure: false,
-      },
       '/api': {
         target: 'http://localhost:3001',
         changeOrigin: true,
