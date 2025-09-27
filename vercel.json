@@ -1,34 +1,19 @@
 {
-  "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "routes": [
+  "functions": {
+    "api/consolidated.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "rewrites": [
     {
-      "src": "/api/consolidated/(.*)",
-      "dest": "/api/consolidated.js"
+      "source": "/api/(.*)",
+      "destination": "/api/consolidated.js"
     },
     {
-      "src": "/api/health",
-      "dest": "/api/consolidated.js"
-    },
-    {
-      "src": "/api/quiz/(.*)",
-      "dest": "/api/consolidated.js"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/consolidated.js"
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "/q/([^/]+)",
-      "dest": "/index.html"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "env": {
