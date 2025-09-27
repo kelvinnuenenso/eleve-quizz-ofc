@@ -120,7 +120,7 @@ export function CRMIntegrationManager({ quiz, onQuizUpdate }: CRMIntegrationMana
       autoCreateLeads: true,
       updateExistingContacts: true,
       duplicateHandling: 'update',
-      leadSource: 'Elevado Quiz',
+      leadSource: 'Quiz Platform',
       customFields: {}
     },
     fieldMapping: {}
@@ -159,7 +159,7 @@ export function CRMIntegrationManager({ quiz, onQuizUpdate }: CRMIntegrationMana
           autoCreateLeads: true,
           updateExistingContacts: true,
           duplicateHandling: 'update',
-          leadSource: 'Elevado Quiz'
+          leadSource: 'Quiz Platform'
         },
         defaultFieldMapping: {
           'email': 'email',
@@ -417,7 +417,7 @@ export function CRMIntegrationManager({ quiz, onQuizUpdate }: CRMIntegrationMana
         autoCreateLeads: true,
         updateExistingContacts: true,
         duplicateHandling: 'update',
-        leadSource: 'Elevado Quiz',
+        leadSource: 'Quiz Platform',
         customFields: {}
       },
       fieldMapping: newConnection.fieldMapping || {},
@@ -447,7 +447,7 @@ export function CRMIntegrationManager({ quiz, onQuizUpdate }: CRMIntegrationMana
         autoCreateLeads: true,
         updateExistingContacts: true,
         duplicateHandling: 'update',
-        leadSource: 'Elevado Quiz',
+        leadSource: 'Quiz Platform',
         customFields: {}
       },
       fieldMapping: {}

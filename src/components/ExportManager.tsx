@@ -228,7 +228,7 @@ export function ExportManager({ quizId }: ExportManagerProps) {
         case 'pdf':
           // Mock PDF generation (in real app, use jsPDF or similar)
           const pdfContent = `
-ELEVADO QUIZZ - RELATÓRIO DE EXPORTAÇÃO
+QUIZ PLATFORM - RELATÓRIO DE EXPORTAÇÃO
 Data: ${new Date().toLocaleDateString()}
 Tipo: ${exportTypes.find(t => t.value === exportType)?.label}
 

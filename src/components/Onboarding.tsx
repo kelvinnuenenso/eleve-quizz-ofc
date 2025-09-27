@@ -145,7 +145,7 @@ export function Onboarding({ isOpen, onComplete, onSkip }: OnboardingProps) {
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl">
-              Bem-vindo ao Elevado Quizz
+              Bem-vindo ao Quiz Platform
             </DialogTitle>
             <Button variant="ghost" size="sm" onClick={onSkip}>
               Pular

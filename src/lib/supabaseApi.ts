@@ -363,32 +363,6 @@ export const optionsApi = {
   }
 };
 
-// API para Responses
-export const responsesApi = {
-  // Criar resposta
-  async create(response: Omit<QuizResponse, 'id' | 'criado_em'>) {
-    const { data, error } = await supabase
-      .from('quiz_responses')
-      .insert(response)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
-
-  // Listar respostas de um quiz
-  async getByQuizId(quizId: string) {
-    const { data, error } = await supabase
-      .from('quiz_responses')
-      .select('*')
-      .eq('quiz_id', quizId)
-      .order('criado_em', { ascending: false });
-    
-    if (error) throw error;
-    return data;
-  },
-
 // API para Responses com mapeamento e validação
 export const responsesApi = {
   // Criar resposta
@@ -493,30 +467,7 @@ export const responsesApi = {
     });
   },
 
-  // Buscar resposta por session_id
-  async getBySessionId(sessionId: string) {
-    const { data, error } = await supabase
-      .from('quiz_responses')
-      .select('*')
-      .eq('session_id', sessionId)
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
 
-  // Atualizar resposta
-  async update(id: string, updates: Partial<QuizResponse>) {
-    const { data, error } = await supabase
-      .from('quiz_responses')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  },
 
   // Estatísticas de um quiz
   async getQuizStats(quizId: string) {

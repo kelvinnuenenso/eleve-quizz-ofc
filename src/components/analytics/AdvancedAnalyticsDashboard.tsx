@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemoMode } from '@/hooks/useDemoMode';
+import { responsesApi } from '@/lib/supabaseApi';
 import { DEMO_ANALYTICS } from '@/lib/demoData';
 import {
   BarChart,
@@ -161,6 +163,9 @@ export function AdvancedAnalyticsDashboard({ quiz, onQuizUpdate }: AdvancedAnaly
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMetric, setSelectedMetric] = useState('completions');
   const [comparisonPeriod, setComparisonPeriod] = useState('previous');
+  
+  const { user } = useAuth();
+  const { isDemoMode } = useDemoMode();
 
   useEffect(() => {
     loadAnalyticsData();
@@ -170,8 +175,6 @@ export function AdvancedAnalyticsDashboard({ quiz, onQuizUpdate }: AdvancedAnaly
     setIsLoading(true);
     
     try {
-      // Verificar se estamos em modo demo
-      const { isDemoMode } = useAuth();
       
       if (isDemoMode) {
         // Usar dados demo
@@ -259,34 +262,121 @@ export function AdvancedAnalyticsDashboard({ quiz, onQuizUpdate }: AdvancedAnaly
         return;
       }
       
-      // Carregar dados reais de analytics (vazios para novos usuários)
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Carregar dados reais de analytics do Supabase
+      let realData: AnalyticsData;
       
-      const emptyData: AnalyticsData = {
-        overview: {
-          totalViews: 0,
-          totalStarts: 0,
-          totalCompletions: 0,
-          totalLeads: 0,
-          conversionRate: 0,
-          completionRate: 0,
-          averageScore: 0,
-          averageTime: 0,
-          bounceRate: 0,
-          returnVisitors: 0
-        },
-        timeSeriesData: [],
-        deviceData: [],
-        locationData: [],
-        trafficSources: [],
-        questionAnalytics: [],
-        outcomeAnalytics: [],
-        funnelData: [],
-        cohortData: [],
-        heatmapData: []
-      };
+      try {
+        if (user && quiz.id) {
+          // Fetch real data from Supabase
+          const responses = await responsesApi.getByQuizId(quiz.id);
+          
+          const totalStarts = responses.length;
+          const totalCompletions = responses.filter((r: any) => r.completed_at).length;
+          const totalLeads = responses.filter((r: any) => r.email).length;
+          
+          // Calculate outcome analytics
+          const outcomeCount: Record<string, number> = {};
+          responses.forEach((r: any) => {
+            if (r.outcome_key) {
+              outcomeCount[r.outcome_key] = (outcomeCount[r.outcome_key] || 0) + 1;
+            }
+          });
+          
+          const outcomeAnalytics = Object.entries(outcomeCount).map(([key, count]) => {
+            const outcome = quiz.outcomes?.find(o => o.key === key);
+            return {
+              outcomeId: key,
+              outcomeName: outcome?.title || key,
+              count,
+              percentage: totalCompletions > 0 ? Math.round((count / totalCompletions) * 100) : 0,
+              averageScore: 0, // Could be calculated from responses
+              leadConversion: 0 // Could be calculated from lead data
+            };
+          });
+          
+          realData = {
+            overview: {
+              totalViews: totalStarts, // Assuming starts = views for now
+              totalStarts,
+              totalCompletions,
+              totalLeads,
+              conversionRate: totalStarts > 0 ? Math.round((totalLeads / totalStarts) * 100) : 0,
+              completionRate: totalStarts > 0 ? Math.round((totalCompletions / totalStarts) * 100) : 0,
+              averageScore: 0, // Could be calculated from responses
+              averageTime: 0, // Could be calculated from completion times
+              bounceRate: 0, // Would need session tracking
+              returnVisitors: 0 // Would need session tracking
+            },
+            timeSeriesData: [], // Would need time-based aggregation
+            deviceData: [], // Would need device tracking
+            locationData: [], // Would need location tracking
+            trafficSources: [], // Would need referrer tracking
+            questionAnalytics: [], // Would need question-level analytics
+            outcomeAnalytics,
+            funnelData: [
+              { stage: 'Visualizações', count: totalStarts, percentage: 100 },
+              { stage: 'Iniciados', count: totalStarts, percentage: 100 },
+              { stage: 'Completados', count: totalCompletions, percentage: totalStarts > 0 ? Math.round((totalCompletions / totalStarts) * 100) : 0 },
+              { stage: 'Leads', count: totalLeads, percentage: totalStarts > 0 ? Math.round((totalLeads / totalStarts) * 100) : 0 }
+            ],
+            cohortData: [], // Would need cohort analysis
+            heatmapData: [] // Would need time-based activity tracking
+          };
+        } else {
+          // Empty data for non-authenticated users or new quizzes
+          realData = {
+            overview: {
+              totalViews: 0,
+              totalStarts: 0,
+              totalCompletions: 0,
+              totalLeads: 0,
+              conversionRate: 0,
+              completionRate: 0,
+              averageScore: 0,
+              averageTime: 0,
+              bounceRate: 0,
+              returnVisitors: 0
+            },
+            timeSeriesData: [],
+            deviceData: [],
+            locationData: [],
+            trafficSources: [],
+            questionAnalytics: [],
+            outcomeAnalytics: [],
+            funnelData: [],
+            cohortData: [],
+            heatmapData: []
+          };
+        }
+      } catch (error) {
+        console.error('Error fetching analytics data:', error);
+        // Fallback to empty data on error
+        realData = {
+          overview: {
+            totalViews: 0,
+            totalStarts: 0,
+            totalCompletions: 0,
+            totalLeads: 0,
+            conversionRate: 0,
+            completionRate: 0,
+            averageScore: 0,
+            averageTime: 0,
+            bounceRate: 0,
+            returnVisitors: 0
+          },
+          timeSeriesData: [],
+          deviceData: [],
+          locationData: [],
+          trafficSources: [],
+          questionAnalytics: [],
+          outcomeAnalytics: [],
+          funnelData: [],
+          cohortData: [],
+          heatmapData: []
+        };
+      }
       
-      setAnalyticsData(emptyData);
+      setAnalyticsData(realData);
     } catch (error) {
       console.error('Erro ao carregar dados de analytics:', error);
     } finally {

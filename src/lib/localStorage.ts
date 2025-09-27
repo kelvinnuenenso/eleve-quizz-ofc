@@ -65,20 +65,24 @@ class LocalStorageManager {
     }
   }
 
-  private setItem<T>(key: string, data: T[]): void {
+  private setItem<T>(key: string, data: T[]): boolean {
     try {
       if (typeof Storage === 'undefined') {
         console.warn('localStorage is not available');
-        return;
+        return false;
       }
+      console.log(`💾 Attempting to save ${key} with ${data.length} items`);
       localStorage.setItem(key, JSON.stringify(data));
+      console.log(`✅ Successfully saved ${key} to localStorage`);
+      return true;
     } catch (error) {
-      console.error(`Error saving ${key} to localStorage:`, error);
+      console.error(`❌ Error saving ${key} to localStorage:`, error);
       // Check if it's a quota exceeded error
       if (error instanceof DOMException && error.code === 22) {
         console.warn('localStorage quota exceeded, clearing some data...');
         // Could implement cleanup logic here
       }
+      return false;
     }
   }
 
@@ -122,17 +126,23 @@ class LocalStorageManager {
   }
 
   // Quiz Management
-  saveQuiz(quiz: Quiz): void {
+  saveQuiz(quiz: Quiz): boolean {
+    console.log(`🔄 saveQuiz called for: ${quiz.name} (${quiz.publicId})`);
     const quizzes = this.getItem<Quiz>(STORAGE_KEYS.QUIZZES);
+    console.log(`📋 Current quizzes count: ${quizzes.length}`);
     const existingIndex = quizzes.findIndex(q => q.id === quiz.id);
     
     if (existingIndex >= 0) {
+      console.log(`🔄 Updating existing quiz at index ${existingIndex}`);
       quizzes[existingIndex] = { ...quiz, updatedAt: new Date().toISOString() };
     } else {
+      console.log(`➕ Adding new quiz`);
       quizzes.push(quiz);
     }
     
-    this.setItem(STORAGE_KEYS.QUIZZES, quizzes);
+    const success = this.setItem(STORAGE_KEYS.QUIZZES, quizzes);
+    console.log(`💾 saveQuiz result: ${success ? 'SUCCESS' : 'FAILED'}`);
+    return success;
   }
 
   getQuiz(id: string): Quiz | null {

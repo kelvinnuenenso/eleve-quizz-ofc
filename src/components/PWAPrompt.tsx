@@ -94,7 +94,7 @@ export function PWAPrompt() {
             </h3>
             <p className="text-xs text-muted-foreground mb-3">
               {isIOS 
-                ? 'Adicione o Elevado Quizz à sua tela inicial para acesso rápido e experiência completa.'
+                ? 'Adicione o Quiz Platform à sua tela inicial para acesso rápido e experiência completa.'
                 : 'Instale nosso app para acesso rápido, notificações e uso offline.'
               }
             </p>

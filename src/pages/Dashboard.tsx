@@ -9,7 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { listQuizzes, saveQuiz } from '@/lib/quizzes';
 import { quizzesApi } from '@/lib/supabaseApi';
 import { localDB } from '@/lib/localStorage';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemoMode } from '@/hooks/useDemoMode';
 import { Quiz } from '@/types/quiz';
 import { generateTestAnalyticsData, clearTestAnalyticsData } from '@/lib/generateTestAnalytics';
 import {
@@ -44,6 +46,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, signOut, session } = useAuth();
+  const { isDemoMode, exitDemoMode, demoUser } = useDemoMode();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
@@ -210,10 +213,8 @@ const Dashboard = () => {
     });
   };
 
-  const getQuizStats = (quizId: string) => {
+  const getQuizStats = async (quizId: string) => {
     // Verificar se estamos em modo demo
-    const { isDemoMode } = useAuth();
-    
     if (isDemoMode) {
       // Retornar estatísticas demo
       return {
@@ -223,15 +224,51 @@ const Dashboard = () => {
       };
     }
     
-    // Carregar dados reais para usuários autenticados
-    const results = localDB.getQuizResults(quizId);
-    const leads = localDB.getQuizLeads(quizId);
-    
-    return {
-      totalStarts: results.length,
-      totalLeads: leads.length,
-      conversionRate: results.length > 0 ? Math.round((leads.length / results.length) * 100) : 0
-    };
+    // Carregar dados reais do Supabase para usuários autenticados
+    try {
+      const { data: responses, error: responsesError } = await supabase
+        .from('quiz_responses')
+        .select('id')
+        .eq('quiz_id', quizId);
+      
+      const { data: leads, error: leadsError } = await supabase
+        .from('leads')
+        .select('id')
+        .eq('quiz_id', quizId);
+      
+      if (responsesError || leadsError) {
+        console.error('Error fetching quiz stats:', responsesError || leadsError);
+        // Fallback to localStorage
+        const results = localDB.getQuizResults(quizId);
+        const localLeads = localDB.getQuizLeads(quizId);
+        
+        return {
+          totalStarts: results.length,
+          totalLeads: localLeads.length,
+          conversionRate: results.length > 0 ? Math.round((localLeads.length / results.length) * 100) : 0
+        };
+      }
+      
+      const totalStarts = responses?.length || 0;
+      const totalLeads = leads?.length || 0;
+      
+      return {
+        totalStarts,
+        totalLeads,
+        conversionRate: totalStarts > 0 ? Math.round((totalLeads / totalStarts) * 100) : 0
+      };
+    } catch (error) {
+      console.error('Error fetching quiz stats:', error);
+      // Fallback to localStorage
+      const results = localDB.getQuizResults(quizId);
+      const localLeads = localDB.getQuizLeads(quizId);
+      
+      return {
+        totalStarts: results.length,
+        totalLeads: localLeads.length,
+        conversionRate: results.length > 0 ? Math.round((localLeads.length / results.length) * 100) : 0
+      };
+    }
   };
 
   const handleSignOut = async () => {
@@ -313,15 +350,38 @@ const Dashboard = () => {
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+                {isDemoMode && (
+                  <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-200">
+                    🎮 MODO DEMO
+                  </Badge>
+                )}
+              </div>
               <p className="text-muted-foreground mt-1">
-                Gerencie seus quizzes e monitore performance
+                {isDemoMode 
+                  ? "Explorando funcionalidades com dados de exemplo (somente leitura)"
+                  : "Gerencie seus quizzes e monitore performance"
+                }
               </p>
             </div>
             <div className="flex items-center gap-3">
               <span className="text-muted-foreground">
-                Olá, {user?.user_metadata?.full_name || user?.email}
+                Olá, {isDemoMode ? demoUser?.name : (user?.user_metadata?.full_name || user?.email)}
               </span>
+              {isDemoMode && (
+                <Button 
+                  onClick={() => {
+                    exitDemoMode();
+                    navigate('/auth');
+                  }}
+                  variant="outline" 
+                  className="gap-2 border-orange-200 text-orange-700 hover:bg-orange-50"
+                  size="sm"
+                >
+                  Sair do DEMO
+                </Button>
+              )}
               <Button 
                 onClick={handleGenerateTestData}
                 variant="outline" 
@@ -439,7 +499,17 @@ const Dashboard = () => {
                   <Download className="w-4 h-4" />
                   Importar Quiz
                 </Button>
-                <Button onClick={createQuiz} disabled={isCreating} className="bg-primary hover:bg-primary/90">
+                <Button 
+                  onClick={isDemoMode ? () => {
+                    toast({
+                      title: "Funcionalidade restrita",
+                      description: "No modo DEMO você pode apenas visualizar. Faça login para criar quizzes.",
+                      variant: "destructive"
+                    });
+                  } : createQuiz} 
+                  disabled={isCreating || isDemoMode} 
+                  className={isDemoMode ? "opacity-50 cursor-not-allowed" : "bg-primary hover:bg-primary/90"}
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   {isCreating ? 'Criando...' : 'Novo Quiz'}
                 </Button>
@@ -455,7 +525,18 @@ const Dashboard = () => {
                 <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                   Crie seu primeiro quiz interativo e comece a converter visitantes em leads qualificados.
                 </p>
-                <Button onClick={createQuiz} disabled={isCreating} size="lg">
+                <Button 
+                  onClick={isDemoMode ? () => {
+                    toast({
+                      title: "Funcionalidade restrita",
+                      description: "No modo DEMO você pode apenas visualizar. Faça login para criar quizzes.",
+                      variant: "destructive"
+                    });
+                  } : createQuiz} 
+                  disabled={isCreating || isDemoMode} 
+                  size="lg"
+                  className={isDemoMode ? "opacity-50 cursor-not-allowed" : ""}
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Criar primeiro quiz
                 </Button>

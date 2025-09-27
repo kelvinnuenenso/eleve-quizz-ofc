@@ -20,9 +20,9 @@ export function SEOHead({
   type = 'website' 
 }: SEOHeadProps) {
   // Generate dynamic content based on quiz
-  const seoTitle = title || (quiz ? `${quiz.name} - Quiz Interativo` : 'Elevado Quizz - Crie quizzes que convertem');
+  const seoTitle = title || (quiz ? `${quiz.name} - Quiz Interativo` : 'Quiz Interativo - Crie quizzes que convertem');
   const seoDescription = description || (quiz?.description || 'Responda este quiz interativo e descubra resultados personalizados.');
-  const seoImage = image || 'https://elevadoquizz.com.br/og-quiz.png';
+  const seoImage = image || '/og-quiz.png';
   const seoUrl = url || window.location.href;
 
   // Generate structured data for quiz
@@ -36,14 +36,14 @@ export function SEOHead({
     "dateModified": quiz.updatedAt || quiz.createdAt,
     "author": {
       "@type": "Organization",
-      "name": "Elevado Quizz"
+      "name": "Quiz Platform"
     },
     "publisher": {
       "@type": "Organization",
-      "name": "Elevado Quizz",
+      "name": "Quiz Platform",
       "logo": {
         "@type": "ImageObject",
-        "url": "https://elevadoquizz.com.br/logo.png"
+        "url": "/logo.png"
       }
     },
     "mainEntity": {
@@ -67,14 +67,14 @@ export function SEOHead({
       <meta property="og:description" content={seoDescription} />
       <meta property="og:image" content={seoImage} />
       <meta property="og:url" content={seoUrl} />
-      <meta property="og:site_name" content="Elevado Quizz" />
+      <meta property="og:site_name" content="Quiz Platform" />
       
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={seoTitle} />
       <meta name="twitter:description" content={seoDescription} />
       <meta name="twitter:image" content={seoImage} />
-      <meta name="twitter:site" content="@elevadoquizz" />
+      <meta name="twitter:site" content="@quizplatform" />
       
       {/* Additional Meta Tags */}
       <meta name="robots" content="index, follow" />
@@ -94,7 +94,7 @@ export function SEOHead({
       <meta name="theme-color" content="#2563EB" />
       <meta name="apple-mobile-web-app-capable" content="yes" />
       <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-      <meta name="apple-mobile-web-app-title" content="Elevado Quizz" />
+      <meta name="apple-mobile-web-app-title" content="Quiz Platform" />
       
       {/* Preload Critical Resources */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />

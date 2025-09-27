@@ -1,69 +1,71 @@
 {
   "tech_stack": [
     "TypeScript",
-    "React",
+    "React 18",
     "Vite",
-    "Node.js",
-    "Express.js",
     "Supabase",
     "PostgreSQL",
     "Tailwind CSS",
-    "Radix UI",
-    "Shadcn/ui",
+    "shadcn/ui",
+    "React Router DOM",
     "React Hook Form",
     "Zod",
+    "Recharts",
     "Lucide React",
-    "Sonner",
-    "Next.js API Routes",
-    "CORS",
-    "dotenv"
+    "Vercel"
   ],
   "features": [
     {
-      "name": "User Authentication",
-      "description": "Complete authentication system with sign up, sign in, Google OAuth, and user profile management using Supabase Auth",
+      "name": "Authentication API",
+      "description": "Sistema completo de autenticação com Supabase Auth, incluindo login, registro, logout e callback OAuth",
       "files": [
         "src/hooks/useAuth.tsx",
-        "src/integrations/supabase/client.ts",
-        "src/pages/Auth.tsx"
+        "src/pages/Auth.tsx",
+        "src/pages/auth/callback.tsx",
+        "src/components/ProtectedRoute.tsx"
       ],
       "api_doc": {
         "openapi": "3.0.0",
         "info": {
-          "title": "User Authentication API",
+          "title": "Authentication API",
           "version": "1.0.0"
         },
         "paths": {
-          "/auth/signin": {
+          "/auth/login": {
             "post": {
-              "summary": "Sign in user",
+              "summary": "User login",
               "requestBody": {
                 "content": {
                   "application/json": {
                     "schema": {
                       "type": "object",
                       "properties": {
-                        "email": { "type": "string" },
-                        "password": { "type": "string" }
+                        "email": {"type": "string"},
+                        "password": {"type": "string"}
                       }
                     }
                   }
                 }
               }
             }
+          },
+          "/auth/callback": {
+            "get": {
+              "summary": "OAuth callback handler"
+            }
           }
         }
       }
     },
     {
-      "name": "Quiz Management",
-      "description": "Complete CRUD operations for quizzes including creation, editing, publishing, and deletion with advanced features like branching logic and gamification",
+      "name": "Quiz Management API",
+      "description": "CRUD completo para quizzes, incluindo criação, edição, publicação e gerenciamento de perguntas",
       "files": [
-        "src/pages/api/quizzes/index.ts",
-        "src/pages/api/quizzes/[id].ts",
-        "src/pages/Dashboard.tsx",
+        "src/lib/supabaseApi.ts",
         "src/pages/QuizEditor.tsx",
-        "src/types/quiz.ts"
+        "src/pages/Dashboard.tsx",
+        "src/components/quiz/QuestionEditor.tsx",
+        "api/consolidated.js"
       ],
       "api_doc": {
         "openapi": "3.0.0",
@@ -72,20 +74,12 @@
           "version": "1.0.0"
         },
         "paths": {
-          "/api/quizzes": {
+          "/api/consolidated/quizzes": {
             "get": {
               "summary": "List user quizzes",
               "parameters": [
-                {
-                  "name": "page",
-                  "in": "query",
-                  "schema": { "type": "integer" }
-                },
-                {
-                  "name": "limit",
-                  "in": "query",
-                  "schema": { "type": "integer" }
-                }
+                {"name": "page", "in": "query", "schema": {"type": "integer"}},
+                {"name": "limit", "in": "query", "schema": {"type": "integer"}}
               ]
             },
             "post": {
@@ -96,9 +90,9 @@
                     "schema": {
                       "type": "object",
                       "properties": {
-                        "name": { "type": "string" },
-                        "description": { "type": "string" },
-                        "questions": { "type": "array" }
+                        "titulo": {"type": "string"},
+                        "descricao": {"type": "string"},
+                        "tema": {"type": "string"}
                       }
                     }
                   }
@@ -106,108 +100,73 @@
               }
             }
           },
-          "/api/quizzes/{id}": {
+          "/api/consolidated/quizzes/{id}": {
             "get": {
-              "summary": "Get quiz by ID",
-              "parameters": [
-                {
-                  "name": "id",
-                  "in": "path",
-                  "required": true,
-                  "schema": { "type": "string" }
-                }
-              ]
+              "summary": "Get quiz by ID"
             },
             "put": {
-              "summary": "Update quiz",
-              "parameters": [
-                {
-                  "name": "id",
-                  "in": "path",
-                  "required": true,
-                  "schema": { "type": "string" }
-                }
-              ]
+              "summary": "Update quiz"
             },
             "delete": {
-              "summary": "Delete quiz",
-              "parameters": [
-                {
-                  "name": "id",
-                  "in": "path",
-                  "required": true,
-                  "schema": { "type": "string" }
-                }
-              }
+              "summary": "Delete quiz"
             }
           }
         }
       }
     },
     {
-      "name": "Quiz Responses",
-      "description": "System for collecting and managing quiz responses with scoring and analytics",
+      "name": "Quiz Runner API",
+      "description": "Sistema para executar quizzes públicos, coletar respostas e gerar resultados",
       "files": [
-        "src/pages/api/quizzes/[id]/responses.ts",
         "src/pages/QuizRunner.tsx",
+        "src/components/quiz/QuizResponseHandler.tsx",
         "src/pages/ResultPage.tsx"
       ],
       "api_doc": {
         "openapi": "3.0.0",
         "info": {
-          "title": "Quiz Responses API",
+          "title": "Quiz Runner API",
           "version": "1.0.0"
         },
         "paths": {
-          "/api/quizzes/{id}/responses": {
-            "post": {
-              "summary": "Submit quiz response",
+          "/q/{publicId}": {
+            "get": {
+              "summary": "Load public quiz for execution",
               "parameters": [
-                {
-                  "name": "id",
-                  "in": "path",
-                  "required": true,
-                  "schema": { "type": "string" }
-                }
-              ],
+                {"name": "publicId", "in": "path", "required": true, "schema": {"type": "string"}}
+              ]
+            }
+          },
+          "/api/consolidated/responses": {
+            "post": {
+              "summary": "Submit quiz responses",
               "requestBody": {
                 "content": {
                   "application/json": {
                     "schema": {
                       "type": "object",
                       "properties": {
-                        "answers": { "type": "array" },
-                        "score": { "type": "number" },
-                        "completedAt": { "type": "string" }
+                        "quiz_id": {"type": "string"},
+                        "respostas": {"type": "object"},
+                        "pontuacao": {"type": "number"}
                       }
                     }
                   }
                 }
               }
-            },
-            "get": {
-              "summary": "Get quiz responses",
-              "parameters": [
-                {
-                  "name": "id",
-                  "in": "path",
-                  "required": true,
-                  "schema": { "type": "string" }
-                }
-              ]
             }
           }
         }
       }
     },
     {
-      "name": "Analytics Dashboard",
-      "description": "Comprehensive analytics system with advanced metrics, A/B testing, and detailed reporting",
+      "name": "Analytics API",
+      "description": "Sistema avançado de analytics com métricas, relatórios e dashboards em tempo real",
       "files": [
-        "src/pages/api/analytics/quiz/[id].ts",
         "src/components/analytics/AdvancedAnalyticsDashboard.tsx",
-        "src/components/analytics/ABTestingManager.tsx",
-        "src/components/quiz/AnalyticsDashboard.tsx"
+        "src/components/quiz/AnalyticsDashboard.tsx",
+        "src/components/analytics/HeatmapAnalytics.tsx",
+        "src/lib/analytics.ts"
       ],
       "api_doc": {
         "openapi": "3.0.0",
@@ -216,30 +175,26 @@
           "version": "1.0.0"
         },
         "paths": {
-          "/api/analytics/quiz/{id}": {
+          "/api/consolidated/analytics/{quizId}": {
             "get": {
-              "summary": "Get quiz analytics",
+              "summary": "Get quiz analytics data",
               "parameters": [
-                {
-                  "name": "id",
-                  "in": "path",
-                  "required": true,
-                  "schema": { "type": "string" }
-                }
-              ],
-              "responses": {
-                "200": {
-                  "description": "Analytics data",
-                  "content": {
-                    "application/json": {
-                      "schema": {
-                        "type": "object",
-                        "properties": {
-                          "overview": { "type": "object" },
-                          "scoreDistribution": { "type": "array" },
-                          "responsesTrend": { "type": "array" },
-                          "questionAnalysis": { "type": "array" }
-                        }
+                {"name": "quizId", "in": "path", "required": true, "schema": {"type": "string"}},
+                {"name": "period", "in": "query", "schema": {"type": "string", "enum": ["7d", "30d", "90d"]}}
+              ]
+            }
+          },
+          "/api/consolidated/analytics/export": {
+            "post": {
+              "summary": "Export analytics data",
+              "requestBody": {
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "quiz_ids": {"type": "array", "items": {"type": "string"}},
+                        "format": {"type": "string", "enum": ["csv", "json", "xlsx"]}
                       }
                     }
                   }
@@ -251,129 +206,46 @@
       }
     },
     {
-      "name": "User Profile Management",
-      "description": "User profile system with plan management, usage tracking, and settings",
+      "name": "User Management API",
+      "description": "Gerenciamento de perfis de usuário, planos e configurações",
       "files": [
-        "src/lib/supabaseApi.ts",
-        "src/lib/localStorage.ts",
-        "src/types/user.ts",
-        "src/pages/Settings.tsx"
+        "src/lib/usageTracker.ts",
+        "src/lib/planManager.ts",
+        "src/lib/subscriptionManager.ts",
+        "src/pages/Settings.tsx",
+        "src/types/user.ts"
       ],
       "api_doc": {
         "openapi": "3.0.0",
         "info": {
-          "title": "User Profile API",
+          "title": "User Management API",
           "version": "1.0.0"
         },
         "paths": {
-          "/api/user/profile": {
+          "/api/consolidated/profile": {
             "get": {
               "summary": "Get user profile"
             },
             "put": {
-              "summary": "Update user profile",
-              "requestBody": {
-                "content": {
-                  "application/json": {
-                    "schema": {
-                      "type": "object",
-                      "properties": {
-                        "name": { "type": "string" },
-                        "email": { "type": "string" },
-                        "plan": { "type": "string" },
-                        "settings": { "type": "object" }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "Consolidated API Server",
-      "description": "Express.js server that consolidates all API endpoints for production deployment on Vercel",
-      "files": [
-        "consolidated-server.cjs",
-        "api-consolidated-main.cjs",
-        "api-consolidated-quizzes.cjs"
-      ],
-      "api_doc": {
-        "openapi": "3.0.0",
-        "info": {
-          "title": "Consolidated API Server",
-          "version": "1.0.0"
-        },
-        "paths": {
-          "/api/consolidated/health": {
-            "get": {
-              "summary": "Health check endpoint",
-              "responses": {
-                "200": {
-                  "description": "Server status",
-                  "content": {
-                    "application/json": {
-                      "schema": {
-                        "type": "object",
-                        "properties": {
-                          "status": { "type": "string" },
-                          "timestamp": { "type": "string" },
-                          "apis": { "type": "array" }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
+              "summary": "Update user profile"
             }
           },
-          "/api/consolidated/quizzes": {
-            "all": {
-              "summary": "Consolidated quiz endpoints"
+          "/api/consolidated/usage": {
+            "get": {
+              "summary": "Get usage statistics"
             }
-          }
-        }
-      }
-    },
-    {
-      "name": "Custom Domain Management",
-      "description": "System for managing custom domains with DNS verification and SSL configuration",
-      "files": [
-        "src/components/settings/CustomDomainManager.tsx"
-      ],
-      "api_doc": {
-        "openapi": "3.0.0",
-        "info": {
-          "title": "Custom Domain API",
-          "version": "1.0.0"
-        },
-        "paths": {
-          "/api/domains": {
+          },
+          "/api/consolidated/subscription": {
             "post": {
-              "summary": "Add custom domain",
-              "requestBody": {
-                "content": {
-                  "application/json": {
-                    "schema": {
-                      "type": "object",
-                      "properties": {
-                        "domain": { "type": "string" },
-                        "subdomain": { "type": "string" }
-                      }
-                    }
-                  }
-                }
-              }
+              "summary": "Update subscription plan"
             }
           }
         }
       }
     },
     {
-      "name": "Template System",
-      "description": "Pre-built quiz templates with various categories and customization options",
+      "name": "Templates API",
+      "description": "Sistema de templates pré-configurados para diferentes tipos de quizzes",
       "files": [
         "src/pages/Templates.tsx",
         "src/lib/expandedTemplates.ts"
@@ -381,34 +253,110 @@
       "api_doc": {
         "openapi": "3.0.0",
         "info": {
-          "title": "Template System API",
+          "title": "Templates API",
           "version": "1.0.0"
         },
         "paths": {
-          "/api/templates": {
+          "/api/consolidated/templates": {
             "get": {
-              "summary": "Get available templates",
-              "responses": {
-                "200": {
-                  "description": "List of templates",
-                  "content": {
-                    "application/json": {
-                      "schema": {
-                        "type": "array",
-                        "items": {
-                          "type": "object",
-                          "properties": {
-                            "id": { "type": "string" },
-                            "name": { "type": "string" },
-                            "category": { "type": "string" },
-                            "description": { "type": "string" }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
+              "summary": "List available templates",
+              "parameters": [
+                {"name": "category", "in": "query", "schema": {"type": "string"}},
+                {"name": "difficulty", "in": "query", "schema": {"type": "string"}}
+              ]
+            }
+          },
+          "/api/consolidated/templates/{id}/clone": {
+            "post": {
+              "summary": "Clone template to create new quiz"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Security & Audit API",
+      "description": "Sistema de segurança, auditoria e monitoramento de atividades",
+      "files": [
+        "src/components/security/SecurityAuditManager.tsx",
+        "src/lib/errorHandling.ts",
+        "src/utils/errorLogger.ts"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "Security & Audit API",
+          "version": "1.0.0"
+        },
+        "paths": {
+          "/api/consolidated/security/events": {
+            "get": {
+              "summary": "Get security events log"
+            }
+          },
+          "/api/consolidated/security/audit": {
+            "post": {
+              "summary": "Trigger security audit"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Integration APIs",
+      "description": "Integrações com CRM, webhooks, pixel tracking e sistemas externos",
+      "files": [
+        "src/components/integrations/CRMIntegrationManager.tsx",
+        "src/lib/webhookSystem.ts",
+        "src/lib/pixelSystem.ts"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "Integration APIs",
+          "version": "1.0.0"
+        },
+        "paths": {
+          "/api/consolidated/integrations/crm": {
+            "get": {
+              "summary": "List CRM integrations"
+            },
+            "post": {
+              "summary": "Create CRM integration"
+            }
+          },
+          "/api/consolidated/webhooks": {
+            "post": {
+              "summary": "Configure webhook endpoint"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "Demo Mode API",
+      "description": "Sistema de demonstração com dados mock para testes e apresentações",
+      "files": [
+        "src/hooks/useDemoMode.tsx",
+        "src/lib/demoData.ts",
+        "src/lib/initializeDemoData.ts",
+        "src/components/DemoModeIndicator.tsx"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "info": {
+          "title": "Demo Mode API",
+          "version": "1.0.0"
+        },
+        "paths": {
+          "/api/consolidated/demo/toggle": {
+            "post": {
+              "summary": "Toggle demo mode on/off"
+            }
+          },
+          "/api/consolidated/demo/data": {
+            "get": {
+              "summary": "Get demo data"
             }
           }
         }

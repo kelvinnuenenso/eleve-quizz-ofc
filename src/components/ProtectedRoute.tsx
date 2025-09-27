@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemoMode } from '@/hooks/useDemoMode';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,13 +9,14 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, session, loading } = useAuth();
+  const { isDemoMode, demoUser } = useDemoMode();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!loading && (!user || !session)) {
+    if (!loading && (!user || !session) && (!isDemoMode || !demoUser)) {
       navigate('/auth');
     }
-  }, [user, session, loading, navigate]);
+  }, [user, session, loading, navigate, isDemoMode, demoUser]);
 
   if (loading) {
     return (
@@ -24,7 +26,8 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!user || !session) {
+  // Allow access if user is authenticated OR in demo mode
+  if ((!user || !session) && (!isDemoMode || !demoUser)) {
     return null;
   }
 

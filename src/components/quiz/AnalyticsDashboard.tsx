@@ -7,7 +7,9 @@ import { Progress } from '@/components/ui/progress';
 import { localDB } from '@/lib/localStorage';
 import { realAnalytics } from '@/lib/analytics';
 import { supabaseSync } from '@/lib/supabaseSync';
+import { responsesApi } from '@/lib/supabaseApi';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemoMode } from '@/hooks/useDemoMode';
 import { DEMO_ANALYTICS } from '@/lib/demoData';
 import { 
   BarChart3, 
@@ -79,7 +81,8 @@ export function AnalyticsDashboard({ quizId }: AnalyticsProps) {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('7d');
-  const { isDemoMode } = useAuth();
+  const { user } = useAuth();
+  const { isDemoMode } = useDemoMode();
 
   useEffect(() => {
     loadAnalytics();
@@ -192,12 +195,27 @@ export function AnalyticsDashboard({ quizId }: AnalyticsProps) {
             dailyData
           } = analyticsData;
 
-        // Get quiz results from localStorage for outcome distribution
-        const results = localDB.getQuizResults(quizId);
+        // Get quiz results for outcome distribution
+        let results = [];
+        try {
+          if (user) {
+            // Use Supabase for authenticated users
+            results = await responsesApi.getByQuizId(quizId);
+          } else {
+            // Fallback to localStorage
+            results = localDB.getQuizResults(quizId);
+          }
+        } catch (error) {
+          console.error('Error fetching quiz results:', error);
+          // Fallback to localStorage on error
+          results = localDB.getQuizResults(quizId);
+        }
+        
         const outcomeCount: Record<string, number> = {};
-        results.forEach(r => {
-          if (r.outcomeKey) {
-            outcomeCount[r.outcomeKey] = (outcomeCount[r.outcomeKey] || 0) + 1;
+        results.forEach((r: any) => {
+          if (r.outcome_key || r.outcomeKey) {
+            const key = r.outcome_key || r.outcomeKey;
+            outcomeCount[key] = (outcomeCount[key] || 0) + 1;
           }
         });
 

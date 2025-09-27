@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    /* Elevado Quizz Brand Colors - Resultado Elevado Palette */
+    /* Quiz Platform Brand Colors */
     --brand-blue-600: 217 91% 46%;
     --brand-blue-500: 217 91% 56%;
     --brand-blue-400: 217 91% 66%;
@@ -41,7 +41,7 @@
     --input: 220 13% 91%;
     --ring: 217 91% 46%;
     
-    /* Enhanced gradients for Elevado Quizz */
+    /* Enhanced gradients for Quiz Platform */
     --gradient-primary: linear-gradient(135deg, hsl(var(--brand-blue-600)), hsl(var(--brand-blue-500)));
     --gradient-secondary: linear-gradient(135deg, hsl(var(--brand-black)), hsl(217 91% 36%));
     --gradient-accent: linear-gradient(135deg, hsl(var(--brand-blue-500)), hsl(var(--brand-white)));

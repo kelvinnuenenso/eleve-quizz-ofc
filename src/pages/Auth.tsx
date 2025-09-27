@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useDemoMode } from '@/hooks/useDemoMode';
 
 export default function Auth() {
   const { user, loading, signIn, signUp, signInWithGoogle } = useAuth();
+  const { isDemoMode, enterDemoMode, demoUser } = useDemoMode();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSignUp, setIsSignUp] = useState(false);
@@ -17,14 +19,14 @@ export default function Auth() {
   const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
-    if (user && !loading) {
+    if ((user && !loading) || (isDemoMode && demoUser)) {
       // Aguarda um pouco para garantir que a sessão foi totalmente estabelecida
       const timer = setTimeout(() => {
         navigate('/dashboard', { replace: true });
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, isDemoMode, demoUser]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,6 +96,25 @@ export default function Auth() {
     }
   };
 
+  const handleDemoMode = async () => {
+    setAuthLoading(true);
+    try {
+      await enterDemoMode();
+      // Navigate to dashboard after demo mode is activated
+      setTimeout(() => {
+        navigate('/dashboard', { replace: true });
+      }, 500);
+    } catch (error) {
+      toast({
+        title: "Erro no modo DEMO",
+        description: "Não foi possível ativar o modo DEMO. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const handleGoogleLogin = async () => {
     setAuthLoading(true);
     try {
@@ -132,7 +153,7 @@ export default function Auth() {
             <span className="text-primary-foreground font-bold text-2xl">EQ</span>
           </div>
           <CardTitle className="text-2xl font-bold text-primary">
-            Elevado Quizz
+            Quiz Platform
           </CardTitle>
           <CardDescription>
             {isSignUp ? 'Crie sua conta gratuita' : 'Entre em sua conta'}
@@ -222,9 +243,23 @@ export default function Auth() {
             </Button>
           </div>
 
-          <div className="text-center pt-4 border-t">
+          <div className="text-center pt-4 border-t space-y-3">
+            <Button
+              onClick={handleDemoMode}
+              variant="outline"
+              className="w-full border-dashed border-2 hover:bg-muted/50"
+              size="lg"
+              disabled={loading || authLoading}
+            >
+              🎮 Entrar em Modo DEMO
+            </Button>
+            
             <p className="text-xs text-muted-foreground">
               💡 <strong>Dica:</strong> Use o Google para acesso rápido e seguro!
+            </p>
+            
+            <p className="text-xs text-muted-foreground">
+              🎮 <strong>Modo DEMO:</strong> Explore as funcionalidades com dados de exemplo (somente leitura)
             </p>
           </div>
         </CardContent>

@@ -12,7 +12,7 @@ interface SEOOptions {
 export function useSEO(quiz?: Quiz, options: SEOOptions = {}) {
   useEffect(() => {
     // Update document title
-    const title = options.title || (quiz ? `${quiz.name} - Quiz Interativo` : 'Elevado Quizz');
+    const title = options.title || (quiz ? `${quiz.name} - Quiz Interativo` : 'Quiz Platform');
     document.title = title;
 
     // Update meta description

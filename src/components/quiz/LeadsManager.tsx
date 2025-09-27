@@ -9,8 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { localDB } from '@/lib/localStorage';
+import { responsesApi, quizzesApi } from '@/lib/supabaseApi';
 import { Lead, Quiz, Result } from '@/types/quiz';
 import { useAuth } from '@/hooks/useAuth';
+import { useDemoMode } from '@/hooks/useDemoMode';
 import { DEMO_LEADS } from '@/lib/demoData';
 import { 
   Users, 
@@ -58,12 +60,12 @@ const LeadsManager = ({ quizId }: LeadsManagerProps) => {
     applyFilters();
   }, [leads, searchTerm, filterQuiz, filterDate]);
 
-  const loadLeads = () => {
+  const { user } = useAuth();
+  const { isDemoMode } = useDemoMode();
+
+  const loadLeads = async () => {
     setLoading(true);
     try {
-      // Verificar se estamos em modo demo
-      const { isDemoMode } = useAuth();
-      
       if (isDemoMode) {
         // Usar dados demo
         const demoLeads = DEMO_LEADS;
@@ -81,20 +83,72 @@ const LeadsManager = ({ quizId }: LeadsManagerProps) => {
       }
       
       // Carregar dados reais para usuários autenticados
-      const allLeads = quizId ? localDB.getQuizLeads(quizId) : localDB.getAllLeads();
-      const allQuizzes = localDB.getAllQuizzes();
-      const allResults = quizId ? localDB.getQuizResults(quizId) : [];
+      let allLeads, allQuizzes, allResults;
+      
+      try {
+        if (user) {
+          // Use Supabase for authenticated users
+          if (quizId) {
+            allResults = await responsesApi.getByQuizId(quizId);
+            const quiz = await quizzesApi.getById(quizId);
+            allQuizzes = quiz ? [quiz] : [];
+            // Filter results that have lead data (email)
+            allLeads = allResults.filter((result: any) => result.email).map((result: any) => ({
+              id: result.id,
+              quizId: result.quiz_id,
+              resultId: result.id,
+              name: result.name || 'Lead sem nome',
+              email: result.email,
+              phone: result.phone || '',
+              createdAt: result.created_at,
+              tags: result.tags || []
+            }));
+          } else {
+            // Get all user's quizzes and their responses
+            allQuizzes = await quizzesApi.getByUserId(user.id);
+            allResults = [];
+            allLeads = [];
+            
+            for (const quiz of allQuizzes) {
+              const quizResults = await responsesApi.getByQuizId(quiz.id);
+              allResults.push(...quizResults);
+              const quizLeads = quizResults.filter((result: any) => result.email).map((result: any) => ({
+                id: result.id,
+                quizId: result.quiz_id,
+                resultId: result.id,
+                name: result.name || 'Lead sem nome',
+                email: result.email,
+                phone: result.phone || '',
+                createdAt: result.created_at,
+                tags: result.tags || []
+              }));
+              allLeads.push(...quizLeads);
+            }
+          }
+        } else {
+          // Fallback to localStorage
+          allLeads = quizId ? localDB.getQuizLeads(quizId) : localDB.getAllLeads();
+          allQuizzes = localDB.getAllQuizzes();
+          allResults = quizId ? localDB.getQuizResults(quizId) : [];
+        }
+      } catch (error) {
+        console.error('Error fetching from Supabase, falling back to localStorage:', error);
+        // Fallback to localStorage on error
+        allLeads = quizId ? localDB.getQuizLeads(quizId) : localDB.getAllLeads();
+        allQuizzes = localDB.getAllQuizzes();
+        allResults = quizId ? localDB.getQuizResults(quizId) : [];
+      }
 
-      const leadsWithDetails: LeadWithDetails[] = allLeads.map(lead => {
-        const quiz = allQuizzes.find(q => q.id === lead.quizId);
-        const result = allResults.find(r => r.id === lead.resultId);
+      const leadsWithDetails: LeadWithDetails[] = allLeads.map((lead: any) => {
+        const quiz = allQuizzes.find((q: any) => q.id === lead.quizId);
+        const result = allResults.find((r: any) => r.id === lead.resultId);
         
         return {
           ...lead,
           quiz: quiz!,
           result: result!,
           score: result?.score,
-          outcomeKey: result?.outcomeKey
+          outcomeKey: result?.outcome_key || result?.outcomeKey
         };
       }).filter(lead => lead.quiz); // Only include leads with valid quiz
 

@@ -667,7 +667,7 @@ const QuizEditor = () => {
                                   <div className="p-3 bg-blue-50 rounded-lg text-sm">
                                     <p className="font-medium text-blue-900 mb-1">Instruções de configuração:</p>
                                     <p className="text-blue-700">
-                                      Crie um registro CNAME apontando <code className="font-mono bg-white px-1 rounded">{quiz.customDomain.domain}</code> → <code className="font-mono bg-white px-1 rounded">quizzes.elevadoquizz.com</code>
+                                      Crie um registro CNAME apontando <code className="font-mono bg-white px-1 rounded">{quiz.customDomain.domain}</code> → <code className="font-mono bg-white px-1 rounded">quizzes.yourdomain.com</code>
                                     </p>
                                   </div>
 

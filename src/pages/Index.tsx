@@ -1,5 +1,5 @@
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { seedDemo } from '@/lib/seed';
 import { DemoModeIndicator } from '@/components/DemoModeIndicator';
 import { DemoUserManager } from '@/lib/demoUser';
 import { Zap, Target, BarChart3, Smartphone, MessageCircle, CheckCircle, Star, Users, TrendingUp, Play } from 'lucide-react';
+
 const Index = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(DemoUserManager.getCurrentUser());
@@ -38,7 +39,7 @@ const Index = () => {
       <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-primary">Elevado Quizz</span>
+            <span className="text-xl font-bold text-primary">Quiz Platform</span>
           </div>
           
           <div className="flex items-center gap-3">
@@ -71,7 +72,7 @@ const Index = () => {
           </h1>
           
           <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
-            Elevado Quizz é o construtor de quizzes e formulários multi-etapas para 
+            Quiz Platform é o construtor de quizzes e formulários multi-etapas para 
             <strong> funis de vendas</strong>, <strong>coleta de leads</strong> e 
             <strong> diagnósticos profissionais</strong>.
           </p>
@@ -206,10 +207,10 @@ const Index = () => {
               <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-xs">EQ</span>
               </div>
-              <span className="font-semibold text-primary">Elevado Quizz</span>
+              <span className="font-semibold text-primary">Quiz Platform</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              © 2024 Elevado Quizz. Todos os direitos reservados.
+              © 2024 Quiz Platform. Todos os direitos reservados.
             </p>
           </div>
         </div>

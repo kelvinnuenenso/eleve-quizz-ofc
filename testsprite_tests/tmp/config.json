@@ -3,14 +3,5 @@
   "type": "backend",
   "scope": "codebase",
   "localEndpoint": "http://localhost:8080",
-  "backendAuthType": "public",
-  "executionArgs": {
-    "projectName": "quiz-lift-off-76",
-    "projectPath": "C:\\Users\\kel02\\quiz-lift-off-76",
-    "testIds": [],
-    "additionalInstruction": "Identificar todos os erros atuais e problemas potenciais para deploy, incluindo problemas de autenticação, persistência de dados, configurações de ambiente, e compatibilidade de APIs",
-    "envs": {
-      "API_KEY": "sk-user-PE93Z0u4PZADzlR8QpxF_V8bcE09-UkCuLZBqRBaCoSqXaJoE8IkSUx4qRpwBxxXSqQsb2u-XRPrJWOiahT5D1omopCj9DU2dbchFYt_YB3ZCoGomVsnyyP21v1UgNqBIZM"
-    }
-  }
+  "backendAuthType": "public"
 }

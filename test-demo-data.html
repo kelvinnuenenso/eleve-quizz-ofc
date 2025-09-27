@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Demo Data</title>
+</head>
+<body>
+    <h1>Testing Demo Data Initialization</h1>
+    <div id="output"></div>
+    
+    <script>
+        // Simple test to check localStorage
+        function testLocalStorage() {
+            const output = document.getElementById('output');
+            
+            try {
+                // Check if localStorage is available
+                if (typeof Storage === 'undefined') {
+                    output.innerHTML += '<p>❌ localStorage is not available</p>';
+                    return;
+                }
+                
+                output.innerHTML += '<p>✅ localStorage is available</p>';
+                
+                // Check existing quizzes
+                const quizzesData = localStorage.getItem('quiz-lift-off-quizzes');
+                if (quizzesData) {
+                    const quizzes = JSON.parse(quizzesData);
+                    output.innerHTML += `<p>📊 Found ${quizzes.length} quizzes in localStorage</p>`;
+                    
+                    const demoQuiz = quizzes.find(q => q.publicId === 'lead-magnet-digital');
+                    if (demoQuiz) {
+                        output.innerHTML += '<p>✅ Demo quiz found!</p>';
+                        output.innerHTML += `<p>Quiz name: ${demoQuiz.name}</p>`;
+                        output.innerHTML += `<p>Quiz status: ${demoQuiz.status}</p>`;
+                    } else {
+                        output.innerHTML += '<p>❌ Demo quiz not found</p>';
+                    }
+                } else {
+                    output.innerHTML += '<p>❌ No quizzes found in localStorage</p>';
+                }
+                
+                // List all localStorage keys
+                output.innerHTML += '<h3>All localStorage keys:</h3>';
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    output.innerHTML += `<p>- ${key}</p>`;
+                }
+                
+            } catch (error) {
+                output.innerHTML += `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Run test when page loads
+        window.onload = testLocalStorage;
+    </script>
+</body>
+</html>

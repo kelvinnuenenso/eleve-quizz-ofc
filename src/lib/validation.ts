@@ -317,12 +317,3 @@ export type ValidatedEnv = z.infer<typeof envSchema>;
 export type CreateQuizRequest = z.infer<typeof createQuizRequestSchema>;
 export type UpdateQuizRequest = z.infer<typeof updateQuizRequestSchema>;
 export type SubmitQuizRequest = z.infer<typeof submitQuizRequestSchema>;
-  } catch (error) {
-    console.error('Result data validation failed:', error);
-    return {
-      success: false,
-      error: error instanceof z.ZodError ? error.issues : 'Unknown validation error',
-      data: null
-    };
-  }
-};

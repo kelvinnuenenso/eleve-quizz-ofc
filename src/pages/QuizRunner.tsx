@@ -21,6 +21,7 @@ import { realAnalytics } from '@/lib/analytics';
 import { realPixelSystem } from '@/lib/pixelSystem';
 import { supabaseSync } from '@/lib/supabaseSync';
 import { webhookSystem } from '@/lib/webhookSystem';
+import { initializeDemoData } from '@/lib/initializeDemoData';
 
 const QuizRunner = () => {
   const { publicId } = useParams<{ publicId: string }>();
@@ -91,7 +92,23 @@ const QuizRunner = () => {
       if (!publicId) return;
       
       try {
-        const loadedQuiz = await loadQuizByPublicId(publicId);
+        let loadedQuiz = await loadQuizByPublicId(publicId);
+        
+        // Force demo data initialization for demo quiz
+        if (publicId === 'lead-magnet-digital') {
+          console.log('Demo quiz requested, forcing demo data initialization...');
+          await initializeDemoData();
+          console.log('Demo data initialization completed');
+          // Wait a bit for the data to be saved
+          await new Promise(resolve => setTimeout(resolve, 200));
+          loadedQuiz = await loadQuizByPublicId(publicId);
+          console.log('Quiz after initialization:', loadedQuiz ? 'Found' : 'Still not found');
+          
+          if (!loadedQuiz) {
+            console.error('Failed to load demo quiz even after initialization');
+          }
+        }
+        
         setQuiz(loadedQuiz);
 
         if (loadedQuiz) {
@@ -692,7 +709,7 @@ const QuizRunner = () => {
                   className="font-semibold text-sm"
                   style={{ color: quiz.theme?.primary || '#2563EB' }}
                 >
-                  Elevado Quizz
+                  Quiz Platform
                 </span>
               </div>
               {quiz?.theme?.showQuestionNumbers !== false && quiz?.questions?.length && (

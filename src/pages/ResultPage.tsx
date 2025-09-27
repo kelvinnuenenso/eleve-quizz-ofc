@@ -140,7 +140,7 @@ const ResultPage = () => {
               <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-xs">EQ</span>
               </div>
-              <span className="font-semibold text-primary text-sm">Elevado Quizz</span>
+              <span className="font-semibold text-primary text-sm">Quiz Platform</span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={shareResult}>

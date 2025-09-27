@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { DemoModeProvider } from "@/hooks/useDemoMode";
 import { TooltipProvider } from "@/components/ui/simple-tooltip";
 import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
 
@@ -10,9 +11,7 @@ import { supabaseSync } from "@/lib/supabaseSync";
 import { webhookSystem } from "@/lib/webhookSystem";
 import { realAnalytics } from "@/lib/analytics";
 import { realPixelSystem } from "@/lib/pixelSystem";
-
-// Initialize Supabase auto-sync
-supabaseSync.startAutoSync();
+import { initializeDemoData } from "@/lib/initializeDemoData";
 import Index from "./pages/Index";
 import { ProtectedRoute } from './components/ProtectedRoute';
 import Dashboard from "./pages/Dashboard";
@@ -82,25 +81,53 @@ const AppContent = () => {
   );
 };
 
-const App = () => (
-  <EnhancedErrorBoundary 
-    componentName="App"
-    maxRetries={2}
-    showErrorDetails={process.env.NODE_ENV === 'development'}
-  >
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AuthProvider>
-          <BrowserRouter>
-            <EnhancedErrorBoundary componentName="Router">
-              <AppContent />
-              <Sonner />
-            </EnhancedErrorBoundary>
-          </BrowserRouter>
-        </AuthProvider>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </EnhancedErrorBoundary>
-);
+const App = () => {
+  useEffect(() => {
+    const initializeApp = async () => {
+      console.log('🚀 App useEffect triggered - initializing demo data...');
+      
+      // Initialize demo data first and wait for completion
+      try {
+        await initializeDemoData();
+        console.log('✅ initializeDemoData completed successfully');
+      } catch (error) {
+        console.error('❌ Error in initializeDemoData:', error);
+      }
+      
+      // Initialize Supabase auto-sync after demo data is ready
+      try {
+        supabaseSync.startAutoSync();
+        console.log('✅ Supabase auto-sync started');
+      } catch (error) {
+        console.error('❌ Error starting Supabase auto-sync:', error);
+      }
+    };
+    
+    initializeApp();
+  }, []);
+
+  return (
+    <EnhancedErrorBoundary 
+      componentName="App"
+      maxRetries={2}
+      showErrorDetails={process.env.NODE_ENV === 'development'}
+    >
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <DemoModeProvider>
+            <AuthProvider>
+              <BrowserRouter>
+                <EnhancedErrorBoundary componentName="Router">
+                  <AppContent />
+                  <Sonner />
+                </EnhancedErrorBoundary>
+              </BrowserRouter>
+            </AuthProvider>
+          </DemoModeProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </EnhancedErrorBoundary>
+  );
+};
 
 export default App;

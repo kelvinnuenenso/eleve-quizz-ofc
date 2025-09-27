@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Direct Init</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .log {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        .success { background: #d4edda; }
+        .error { background: #f8d7da; }
+        .info { background: #d1ecf1; }
+    </style>
+</head>
+<body>
+    <h1>Direct InitializeDemoData Test</h1>
+    <button onclick="testInit()">Test Initialize Demo Data</button>
+    <button onclick="clearStorage()">Clear Storage</button>
+    <button onclick="checkStorage()">Check Storage</button>
+    <div id="output"></div>
+
+    <script>
+        // Storage keys
+        const STORAGE_KEYS = {
+            QUIZZES: 'elevado_quizzes'
+        };
+
+        // Demo quiz data
+        const DEMO_QUIZZES = [{
+            id: 'demo-lead-magnet-digital',
+            publicId: 'lead-magnet-digital',
+            name: 'Quiz Lead Magnet Digital',
+            title: 'Descubra Seu Nível de Maturidade Digital',
+            description: 'Avalie onde sua empresa está na jornada digital e receba insights personalizados.',
+            status: 'published',
+            questions: [{
+                id: 'q1',
+                type: 'multiple_choice',
+                question: 'Qual é o principal objetivo do seu negócio online?',
+                options: [
+                    { id: 'opt1', label: 'Aumentar vendas', value: 'sales', score: 5 },
+                    { id: 'opt2', label: 'Gerar leads', value: 'leads', score: 4 },
+                    { id: 'opt3', label: 'Construir marca', value: 'brand', score: 3 }
+                ],
+                required: true
+            }],
+            results: {
+                'beginner': {
+                    title: 'Iniciante Digital',
+                    description: 'Você está começando sua jornada digital.',
+                    action: {
+                        label: 'Receber plano de ação personalizado',
+                        href: 'https://wa.me/5511999999999'
+                    },
+                    scoreRange: { min: 0, max: 8 },
+                    color: 'hsl(39, 100%, 57%)',
+                    icon: '🌱'
+                }
+            },
+            theme: {
+                primaryColor: '#007bff',
+                backgroundColor: '#ffffff'
+            },
+            settings: {
+                collectEmail: true,
+                showProgressBar: true
+            },
+            createdAt: '2024-01-10T10:00:00Z',
+            updatedAt: '2024-01-15T14:30:00Z'
+        }];
+
+        // LocalStorage Manager
+        class LocalStorageManager {
+            isAvailable() {
+                try {
+                    const test = '__localStorage_test__';
+                    localStorage.setItem(test, test);
+                    localStorage.removeItem(test);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            getItem(key) {
+                try {
+                    if (!this.isAvailable()) {
+                        log('❌ localStorage not available', 'error');
+                        return [];
+                    }
+                    const data = localStorage.getItem(key);
+                    if (!data) return [];
+                    
+                    const parsed = JSON.parse(data);
+                    return Array.isArray(parsed) ? parsed : [];
+                } catch (error) {
+                    log(`❌ Error reading ${key}: ${error.message}`, 'error');
+                    try {
+                        localStorage.removeItem(key);
+                    } catch (clearError) {
+                        log(`❌ Failed to clear corrupted data: ${clearError.message}`, 'error');
+                    }
+                    return [];
+                }
+            }
+
+            setItem(key, data) {
+                try {
+                    if (!this.isAvailable()) {
+                        log('❌ localStorage not available', 'error');
+                        return false;
+                    }
+                    log(`💾 Attempting to save ${key} with ${data.length} items`, 'info');
+                    localStorage.setItem(key, JSON.stringify(data));
+                    log(`✅ Successfully saved ${key} to localStorage`, 'success');
+                    return true;
+                } catch (error) {
+                    log(`❌ Error saving ${key}: ${error.message}`, 'error');
+                    if (error instanceof DOMException && error.code === 22) {
+                        log('❌ localStorage quota exceeded', 'error');
+                    }
+                    return false;
+                }
+            }
+
+            getAllQuizzes() {
+                return this.getItem(STORAGE_KEYS.QUIZZES);
+            }
+
+            getQuizByPublicId(publicId) {
+                const quizzes = this.getAllQuizzes();
+                return quizzes.find(q => q.publicId === publicId && q.status === 'published') || null;
+            }
+
+            saveQuiz(quiz) {
+                log(`🔄 saveQuiz called for: ${quiz.name} (${quiz.publicId})`, 'info');
+                const quizzes = this.getAllQuizzes();
+                log(`📋 Current quizzes count: ${quizzes.length}`, 'info');
+                const existingIndex = quizzes.findIndex(q => q.id === quiz.id);
+                
+                if (existingIndex >= 0) {
+                    log(`🔄 Updating existing quiz at index ${existingIndex}`, 'info');
+                    quizzes[existingIndex] = { ...quiz, updatedAt: new Date().toISOString() };
+                } else {
+                    log(`➕ Adding new quiz`, 'info');
+                    quizzes.push(quiz);
+                }
+                
+                const success = this.setItem(STORAGE_KEYS.QUIZZES, quizzes);
+                log(`💾 saveQuiz result: ${success ? 'SUCCESS' : 'FAILED'}`, success ? 'success' : 'error');
+                return success;
+            }
+        }
+
+        const localDB = new LocalStorageManager();
+
+        // Initialize demo data function
+        function initializeDemoData() {
+            log('🚀 Starting demo data initialization...', 'info');
+            
+            try {
+                if (!localDB.isAvailable()) {
+                    log('❌ localStorage is not available, skipping demo data initialization', 'error');
+                    return;
+                }
+                
+                log('✅ localStorage is available', 'success');
+                
+                // Get existing quizzes
+                const existingQuizzes = localDB.getAllQuizzes();
+                log(`📋 Existing quizzes count: ${existingQuizzes.length}`, 'info');
+                
+                // List existing quiz publicIds
+                if (existingQuizzes.length > 0) {
+                    const publicIds = existingQuizzes.map(q => q.publicId).join(', ');
+                    log(`📋 Existing quiz publicIds: ${publicIds}`, 'info');
+                }
+                
+                // Check if demo quiz already exists
+                const hasDemoQuiz = existingQuizzes.some(quiz => quiz.publicId === 'lead-magnet-digital');
+                log(`🔍 Demo quiz already exists: ${hasDemoQuiz}`, 'info');
+                
+                if (!hasDemoQuiz) {
+                    log('💾 Demo quiz not found, initializing...', 'info');
+                    
+                    for (const demoQuiz of DEMO_QUIZZES) {
+                        log(`🔄 Processing quiz: ${demoQuiz.publicId}`, 'info');
+                        
+                        const existingQuiz = localDB.getQuizByPublicId(demoQuiz.publicId);
+                        
+                        if (!existingQuiz) {
+                            log(`Saving demo quiz: ${demoQuiz.name} (${demoQuiz.publicId})`, 'info');
+                            const saveResult = localDB.saveQuiz(demoQuiz);
+                            
+                            if (saveResult) {
+                                log(`✅ Demo quiz saved successfully: ${demoQuiz.publicId}`, 'success');
+                                
+                                // Verify it was saved
+                                const savedQuizzes = localDB.getAllQuizzes();
+                                log(`Total quizzes after saving ${demoQuiz.publicId}: ${savedQuizzes.length}`, 'info');
+                                
+                                // Double-check the specific quiz exists
+                                const verifyQuiz = localDB.getQuizByPublicId(demoQuiz.publicId);
+                                log(`Verification - Quiz ${demoQuiz.publicId} exists: ${!!verifyQuiz}`, verifyQuiz ? 'success' : 'error');
+                            } else {
+                                log(`❌ Failed to save demo quiz: ${demoQuiz.publicId}`, 'error');
+                            }
+                        } else {
+                            log('⏭️ Quiz already exists, skipping: ' + demoQuiz.publicId, 'info');
+                        }
+                    }
+                    
+                    // Final verification
+                    const finalQuizzes = localDB.getAllQuizzes();
+                    log(`🏁 Final verification - Total quizzes: ${finalQuizzes.length}`, 'info');
+                    
+                    const finalDemoQuiz = localDB.getQuizByPublicId('lead-magnet-digital');
+                    log(`🏁 Final verification - Demo quiz exists: ${!!finalDemoQuiz}`, finalDemoQuiz ? 'success' : 'error');
+                } else {
+                    log('✅ Demo quiz already exists, skipping initialization', 'success');
+                }
+                
+                log('🎉 Demo data initialization completed', 'success');
+            } catch (error) {
+                log(`❌ Error during demo data initialization: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+
+        // Utility functions
+        function log(message, type = 'info') {
+            const output = document.getElementById('output');
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+            output.appendChild(div);
+            console.log(message);
+        }
+
+        function testInit() {
+            document.getElementById('output').innerHTML = '';
+            log('🧪 Starting test...', 'info');
+            initializeDemoData();
+        }
+
+        function clearStorage() {
+            localStorage.removeItem(STORAGE_KEYS.QUIZZES);
+            log('🗑️ Storage cleared', 'info');
+            checkStorage();
+        }
+
+        function checkStorage() {
+            const quizzes = localDB.getAllQuizzes();
+            log(`📊 Current storage state: ${quizzes.length} quizzes`, 'info');
+            
+            if (quizzes.length > 0) {
+                quizzes.forEach((quiz, index) => {
+                    log(`  ${index + 1}. ${quiz.name} (${quiz.publicId})`, 'info');
+                });
+            }
+        }
+
+        // Auto-run on page load
+        window.addEventListener('load', () => {
+            log('🌐 Page loaded, checking initial state...', 'info');
+            checkStorage();
+        });
+    </script>
+</body>
+</html>

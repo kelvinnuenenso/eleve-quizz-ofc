@@ -165,7 +165,7 @@ NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 ```
 
-2. **Conecte o Supabase** no dashboard Lovable
+2. **Configure o Supabase** nas variáveis de ambiente
 3. **Ative RLS** e configure as políticas
 4. **Deploy** via Vercel/Netlify
 
