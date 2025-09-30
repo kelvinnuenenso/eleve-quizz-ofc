@@ -1,7 +1,7 @@
-// Service Worker for PWA functionality - UPDATED VERSION
-const CACHE_NAME = 'elevado-quizz-v2-new-landing';
-const STATIC_CACHE = 'elevado-static-v2-new-landing';
-const DYNAMIC_CACHE = 'elevado-dynamic-v2-new-landing';
+// Service Worker for PWA functionality
+const CACHE_NAME = 'elevado-quizz-v1';
+const STATIC_CACHE = 'elevado-static-v1';
+const DYNAMIC_CACHE = 'elevado-dynamic-v1';
 
 // Files to cache immediately
 const STATIC_FILES = [

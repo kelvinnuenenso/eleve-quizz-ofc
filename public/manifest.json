@@ -1,6 +1,6 @@
 {
-  "name": "Quiz Platform - Plataforma de Quizzes Interativos",
-  "short_name": "Quiz Platform",
+  "name": "Elevado Quizz - Plataforma de Quizzes Interativos",
+  "short_name": "Elevado Quizz",
   "description": "Crie quizzes interativos que convertem visitantes em leads qualificados",
   "start_url": "/",
   "display": "standalone",
