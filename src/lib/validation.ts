@@ -5,8 +5,8 @@ import { z } from 'zod';
 // Environment validation
 export const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  VITE_SUPABASE_URL: z.string().url('URL do Supabase inválida'),
-  VITE_SUPABASE_PUBLISHABLE_KEY: z.string().min(1, 'Chave pública do Supabase é obrigatória'),
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url('URL do Supabase inválida'),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'Chave pública do Supabase é obrigatória'),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'Chave de serviço do Supabase é obrigatória').optional(),
   ALLOWED_ORIGINS: z.string().optional(),
   RATE_LIMIT_WINDOW_MS: z.string().regex(/^\d+$/).transform(Number).default('900000'),

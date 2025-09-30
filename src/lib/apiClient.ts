@@ -3,7 +3,7 @@
 // Em desenvolvimento, pode usar o servidor Express local ou as APIs serverless
 const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? '/api' 
-  : (process.env.VITE_USE_LOCAL_API === 'true' ? 'http://localhost:3001/api' : '/api');
+  : (process.env.NEXT_PUBLIC_USE_LOCAL_API === 'true' ? 'http://localhost:3001/api' : '/api');
 
 export interface QuizResposta {
   quiz_id: string;
