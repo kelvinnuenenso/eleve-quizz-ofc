@@ -90,6 +90,18 @@ Em desenvolvimento:
 http://localhost:8080/app
 ```
 
+## Variáveis de Ambiente Necessárias
+
+```env
+# Supabase Configuration
+VITE_SUPABASE_URL=https://rijvidluwvzvatoarqoe.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... # APENAS BACKEND
+
+# Site URL for authentication redirects
+VITE_SITE_URL=https://quiz-lift-off-76.vercel.app
+```
+
 ## Próximos Passos
 
 1. ✅ Configurar URLs no Supabase (seguir este guia)

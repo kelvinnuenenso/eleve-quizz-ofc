@@ -2,11 +2,9 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
 // Use environment variables for Supabase configuration
-// Support both VITE_ (for Vite) and NEXT_PUBLIC_ (for Next.js) prefixes
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 
-                    import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 
-                               import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// Using VITE_ prefix for Vite project
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Validate environment variables
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {

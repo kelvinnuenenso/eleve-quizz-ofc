@@ -49,26 +49,22 @@ https://quiz-lift-off-76.vercel.app/app
 ```env
 # Supabase Configuration
 VITE_SUPABASE_URL=https://rijvidluwvzvatoarqoe.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-NEXT_PUBLIC_SUPABASE_URL=https://rijvidluwvzvatoarqoe.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... # APENAS BACKEND
 
 # Site URL for authentication redirects
-NEXT_PUBLIC_SITE_URL=http://localhost:8080
+VITE_SITE_URL=http://localhost:8081
 ```
 
 ### Produção (.env.production)
 ```env
 # Supabase Configuration
 VITE_SUPABASE_URL=https://rijvidluwvzvatoarqoe.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-NEXT_PUBLIC_SUPABASE_URL=https://rijvidluwvzvatoarqoe.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9... # APENAS BACKEND
 
 # Site URL for authentication redirects
-NEXT_PUBLIC_SITE_URL=https://quiz-lift-off-76.vercel.app
+VITE_SITE_URL=https://quiz-lift-off-76.vercel.app
 ```
 
 ## Fluxo de Autenticação
