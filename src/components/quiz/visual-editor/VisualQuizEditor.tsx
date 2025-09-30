@@ -1,6 +1,24 @@
 import { useState, useCallback, useEffect } from 'react';
-import { DragDropContext, Droppable, Draggable, DropResult, DragOverlay } from 'react-beautiful-dnd';
-import { DndContext, DragStartEvent, DragEndEvent, useDroppable } from '@dnd-kit/core';
+import { 
+  DndContext, 
+  DragStartEvent, 
+  DragEndEvent, 
+  useDroppable,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragOverlay
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -39,6 +57,68 @@ export function VisualQuizEditor({
   
   const activeStep = quiz.steps?.find(step => step.id === activeStepId);
   const selectedComponent = activeStep?.components.find(comp => comp.id === selectedComponentId);
+
+  // Componente sortable para drag and drop
+  const SortableComponent = ({ component, index }: { component: Component; index: number }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: component.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        className={`
+          group relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200
+          ${selectedComponentId === component.id 
+            ? 'border-primary bg-primary/5 shadow-md' 
+            : 'border-border hover:border-primary/50 hover:shadow-sm'
+          }
+          ${isDragging ? 'shadow-lg z-50' : ''}
+        `}
+        onClick={() => setSelectedComponentId(component.id)}
+      >
+        {/* Handle de drag */}
+        <div 
+          {...attributes}
+          {...listeners}
+          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing"
+        >
+          <Move className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+        </div>
+        
+        {/* Badge do tipo */}
+        <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Badge variant="outline" className="text-xs">
+            {component.type}
+          </Badge>
+        </div>
+        
+        {/* Preview do componente */}
+        <div className="mt-6">
+          {renderComponentPreview(component)}
+        </div>
+        
+        {/* Indicador de seleção */}
+        {selectedComponentId === component.id && (
+          <div className="absolute -top-1 -right-1">
+            <CheckCircle className="w-5 h-5 text-primary bg-background rounded-full" />
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // Sistema de undo/redo otimizado
   const pushToHistory = useCallback((newQuiz: Quiz) => {
@@ -828,15 +908,37 @@ export function VisualQuizEditor({
     });
   };
 
+  // Configuração dos sensores para drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Estado para drag overlay
+  const [activeId, setActiveId] = useState<string | null>(null);
+
   // Drag and drop para reordenar componentes
-  const handleDragEnd = (result: DropResult) => {
-    if (!result.destination || !activeStep) return;
-    const items = Array.from(activeStep.components);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    updateStep(activeStepId, {
-      components: items
-    });
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (!over || !activeStep || active.id === over.id) return;
+
+    const oldIndex = activeStep.components.findIndex(comp => comp.id === active.id);
+    const newIndex = activeStep.components.findIndex(comp => comp.id === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newComponents = arrayMove(activeStep.components, oldIndex, newIndex);
+      updateStep(activeStepId, {
+        components: newComponents
+      });
+    }
   };
 
   // Atalhos de teclado
@@ -1001,77 +1103,47 @@ export function VisualQuizEditor({
               <Card className="flex-1 shadow-sm">
                 <div className="h-full p-6 overflow-y-auto">
                   {activeStep ? (
-                    <DragDropContext onDragEnd={handleDragEnd}>
-                      <Droppable droppableId="components">
-                        {(provided, snapshot) => (
-                          <div 
-                            {...provided.droppableProps} 
-                            ref={provided.innerRef} 
-                            className={`space-y-4 min-h-full transition-colors ${
-                              snapshot.isDraggingOver ? 'bg-primary/5' : ''
-                            }`}
-                          >
-                            {activeStep.components.length === 0 && (
-                              <div className="flex items-center justify-center h-40 border-2 border-dashed rounded-lg text-muted-foreground">
-                                <div className="text-center">
-                                  <Layers className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                  <p className="text-sm">Arraste componentes aqui para começar</p>
-                                  <p className="text-xs mt-1">Ou clique em um componente na biblioteca</p>
-                                </div>
+                    <DndContext 
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext 
+                        items={activeStep.components.map(comp => comp.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <div className="space-y-4 min-h-full">
+                          {activeStep.components.length === 0 && (
+                            <div className="flex items-center justify-center h-40 border-2 border-dashed rounded-lg text-muted-foreground">
+                              <div className="text-center">
+                                <Layers className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                <p className="text-sm">Arraste componentes aqui para começar</p>
+                                <p className="text-xs mt-1">Ou clique em um componente na biblioteca</p>
                               </div>
+                            </div>
+                          )}
+                          
+                          {activeStep.components.map((component, index) => (
+                            <SortableComponent 
+                              key={component.id} 
+                              component={component} 
+                              index={index} 
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                      
+                      <DragOverlay>
+                        {activeId ? (
+                          <div className="p-4 border-2 border-primary bg-primary/5 rounded-lg shadow-lg">
+                            {renderComponentPreview(
+                              activeStep.components.find(comp => comp.id === activeId)!
                             )}
-                            
-                            {activeStep.components.map((component, index) => (
-                              <Draggable key={component.id} draggableId={component.id} index={index}>
-                                {(provided, snapshot) => (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    className={`
-                                      group relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200
-                                      ${selectedComponentId === component.id 
-                                        ? 'border-primary bg-primary/5 shadow-md' 
-                                        : 'border-border hover:border-primary/50 hover:shadow-sm'
-                                      }
-                                      ${snapshot.isDragging ? 'shadow-lg rotate-2 scale-105' : ''}
-                                    `}
-                                    onClick={() => setSelectedComponentId(component.id)}
-                                  >
-                                    {/* Handle de drag */}
-                                    <div 
-                                      {...provided.dragHandleProps}
-                                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                      <Move className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                                    </div>
-                                    
-                                    {/* Badge do tipo */}
-                                    <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <Badge variant="outline" className="text-xs">
-                                        {component.type}
-                                      </Badge>
-                                    </div>
-                                    
-                                    {/* Preview do componente */}
-                                    <div className="mt-6">
-                                      {renderComponentPreview(component)}
-                                    </div>
-                                    
-                                    {/* Indicador de seleção */}
-                                    {selectedComponentId === component.id && (
-                                      <div className="absolute -top-1 -right-1">
-                                        <CheckCircle className="w-5 h-5 text-primary bg-background rounded-full" />
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </Draggable>
-                            ))}
-                            {provided.placeholder}
                           </div>
-                        )}
-                      </Droppable>
-                    </DragDropContext>
+                        ) : null}
+                      </DragOverlay>
+                    </DndContext>
                   ) : (
                     <div className="flex items-center justify-center h-full text-muted-foreground">
                       <div className="text-center">

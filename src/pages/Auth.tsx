@@ -18,6 +18,8 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  
+
 
   useEffect(() => {
     if ((user && !loading) || (isDemoMode && demoUser)) {

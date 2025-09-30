@@ -26,11 +26,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [authTimeout, setAuthTimeout] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    // Set up safety timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      console.warn('Auth timeout reached - forcing loading to false');
+      setLoading(false);
+    }, 8000); // 8 seconds timeout
+    
+    setAuthTimeout(timeout);
+    
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        // Clear timeout since we got a response
+        if (authTimeout) {
+          clearTimeout(authTimeout);
+          setAuthTimeout(null);
+        }
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -45,8 +60,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      // Clear timeout since we got a response
+      if (timeout) {
+        clearTimeout(timeout);
+        setAuthTimeout(null);
+      }
+      
+      if (error) {
+        console.error('Error getting session:', error);
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -55,9 +80,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       setLoading(false);
+    }).catch((error) => {
+      console.error('Error getting session:', error);
+      
+      // Clear timeout and stop loading on error
+      if (timeout) {
+        clearTimeout(timeout);
+        setAuthTimeout(null);
+      }
+      
+      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      // Clear timeout on cleanup
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+      
+      subscription.unsubscribe();
+    };
   }, []);
 
   const syncUserProfile = async (user: User) => {
@@ -134,7 +176,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.error('Background sync failed:', error);
         });
       }
-      
     } catch (error) {
       console.error('Error syncing user profile:', error);
       // Fallback to basic profile
