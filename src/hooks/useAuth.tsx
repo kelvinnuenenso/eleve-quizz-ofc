@@ -75,8 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Create profile in Supabase if it doesn't exist
         const newProfile = {
           user_id: user.id,
-          email: user.email || '',
-          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+          display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuário',
+          username: user.email?.split('@')[0] || null,
           avatar_url: user.user_metadata?.avatar_url,
           plan: 'starter' as PlanType,
           created_at: new Date().toISOString(),
@@ -101,8 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         userProfile = {
           id: existingProfile.user_id,
-          email: existingProfile.email,
-          name: existingProfile.name,
+          email: user.email || '',
+          name: existingProfile.display_name,
           avatar_url: existingProfile.avatar_url,
           plan: existingProfile.plan || 'starter',
           plan_expires_at: existingProfile.plan_expires_at,
@@ -117,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const legacyProfile = {
         id: user.id,
         name: userProfile.name || 'Usuário',
-        email: userProfile.email,
+        email: user.email || '',
         createdAt: userProfile.created_at,
         plan: 'free', // Keep legacy format for compatibility
         settings: {
@@ -212,23 +212,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const updateProfile = async (updates: Partial<UserProfile>) => {
+  const updateProfile = async (updates: Partial<{ name: string; email: string; avatar_url: string }>) => {
     if (!user || !profile) return;
 
     try {
-      const updatedProfile = {
-        ...updates,
+      const profileUpdates = {
+        display_name: updates.name,
+        avatar_url: updates.avatar_url,
         updated_at: new Date().toISOString(),
       };
 
+      // Remove undefined values
+      Object.keys(profileUpdates).forEach(key => {
+        if (profileUpdates[key as keyof typeof profileUpdates] === undefined) {
+          delete profileUpdates[key as keyof typeof profileUpdates];
+        }
+      });
+
       const { error } = await supabase
         .from('user_profiles')
-        .update(updatedProfile)
+        .update(profileUpdates)
         .eq('user_id', user.id);
 
       if (error) throw error;
 
-      setProfile(prev => prev ? { ...prev, ...updatedProfile } : null);
+      setProfile(prev => prev ? { ...prev, name: updates.name || prev.name, avatar_url: updates.avatar_url || prev.avatar_url } : null);
       toast.success('Perfil atualizado com sucesso!');
     } catch (error) {
       console.error('Error updating profile:', error);

@@ -15,16 +15,16 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="p-8 text-center max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4 transition-colors">
+      <Card className="p-8 text-center max-w-md dark:bg-gray-800 dark:border-gray-700 transition-colors">
         <div className="flex justify-center mb-4">
-          <Search className="w-16 h-16 text-muted-foreground" />
+          <Search className="w-16 h-16 text-gray-400 dark:text-gray-500 transition-colors" />
         </div>
         
-        <h1 className="text-4xl font-bold mb-2 text-foreground">404</h1>
-        <h2 className="text-xl font-semibold mb-4 text-foreground">Página não encontrada</h2>
+        <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-white transition-colors">404</h1>
+        <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white transition-colors">Página não encontrada</h2>
         
-        <p className="text-muted-foreground mb-6">
+        <p className="text-gray-600 dark:text-gray-300 mb-6 transition-colors">
           A página que você está procurando não existe ou foi movida.
         </p>
 
@@ -36,14 +36,14 @@ const NotFound = () => {
             </Link>
           </Button>
           
-          <Button variant="outline" asChild className="w-full">
+          <Button variant="outline" asChild className="w-full dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors">
             <Link to="/app">
               Ir para Dashboard
             </Link>
           </Button>
         </div>
 
-        <p className="text-xs text-muted-foreground mt-4">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 transition-colors">
           Rota: {location.pathname}
         </p>
       </Card>

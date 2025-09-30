@@ -9,10 +9,12 @@ import type { Quiz as FrontendQuiz, Result, Lead } from '@/types/quiz';
 export interface UserProfile {
   id: string;
   user_id: string;
-  nome: string;
-  email: string;
-  plano: 'free' | 'basic' | 'premium' | 'enterprise';
-  data_criacao: string;
+  username?: string;
+  display_name: string;
+  bio?: string;
+  avatar_url?: string;
+  plan: 'starter' | 'basic' | 'premium' | 'enterprise';
+  created_at: string;
   updated_at: string;
 }
 

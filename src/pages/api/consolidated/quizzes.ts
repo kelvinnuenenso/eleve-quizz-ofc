@@ -86,7 +86,14 @@ async function handler(
         if (req.method !== 'POST' || !user) {
           return res.status(405).json({ success: false, error: 'Method not allowed' });
         }
-        const quizData = { ...req.body, user_id: user.id };
+        const { v4: uuidv4 } = require('uuid');
+        const quizData = { 
+          ...req.body, 
+          user_id: user.id,
+          public_id: uuidv4(), // Sempre gerar public_id
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
         const { data: newQuiz, error: createError } = await supabase
           .from('quizzes')
           .insert(quizData)

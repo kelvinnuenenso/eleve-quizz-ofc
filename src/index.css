@@ -87,41 +87,46 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Cores de fundo escuras melhoradas */
+    --background: 210 11% 7%; /* #111827 */
+    --foreground: 210 20% 98%; /* #f9fafb */
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 210 11% 11%; /* #1f2937 */
+    --card-foreground: 210 20% 98%; /* #f9fafb */
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 210 11% 11%; /* #1f2937 */
+    --popover-foreground: 210 20% 98%; /* #f9fafb */
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    /* Botão primário azul elegante */
+    --primary: 217 91% 46%; /* #2563eb */
+    --primary-foreground: 210 20% 98%; /* #f9fafb */
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    /* Botões secundários cinza médio */
+    --secondary: 215 25% 27%; /* #374151 */
+    --secondary-foreground: 210 20% 98%; /* #f9fafb */
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 210 11% 15%; /* #1e1e1e */
+    --muted-foreground: 220 9% 82%; /* #d1d5db */
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 217 91% 56%; /* hover mais claro */
+    --accent-foreground: 210 20% 98%; /* #f9fafb */
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 20% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Bordas cinza escuro */
+    --border: 215 25% 27%; /* #374151 */
+    --input: 210 11% 15%; /* #1e1e1e para inputs */
+    --ring: 217 91% 46%; /* #2563eb */
+    
+    --sidebar-background: 210 11% 7%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 217 91% 46%;
+    --sidebar-primary-foreground: 210 20% 98%;
+    --sidebar-accent: 210 11% 11%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 215 25% 27%;
+    --sidebar-ring: 217 91% 46%;
   }
 }
 
@@ -180,6 +185,51 @@
   
   .layout-multipage {
     @apply max-w-4xl mx-auto p-4 space-y-6;
+  }
+  
+  /* Animation utilities */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  
+  .scroll-animate {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s ease-out;
+  }
+  
+  .scroll-animate.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .hover-scale {
+    transition: transform 0.3s ease;
+  }
+  
+  .hover-scale:hover {
+    transform: scale(1.05);
+  }
+  
+  .glow-button {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+  
+  .hover-shadow:hover {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  }
+  
+  .parallax {
+    transform: translateZ(0);
+  }
+  
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-20px);
+    }
   }
   
   /* Gradient backgrounds */
@@ -333,7 +383,97 @@
     cursor: grab;
   }
 
+  /* Classes utilitárias para modo dark */
+  .dark .force-contrast {
+    color: #fff !important;
+  }
+
+  /* Correções específicas para textos no modo dark */
+  .dark .text-black {
+    color: #f9fafb !important;
+  }
+
+  .dark .text-gray-900 {
+    color: #f9fafb !important;
+  }
+
+  .dark .text-gray-800 {
+    color: #d1d5db !important;
+  }
+
+  .dark .text-gray-700 {
+    color: #d1d5db !important;
+  }
+
+  .dark .text-gray-600 {
+    color: #9ca3af !important;
+  }
+
+  /* Correções para fundos no modo dark */
+  .dark .bg-white {
+    background-color: #111827 !important;
+  }
+
+  .dark .bg-gray-50 {
+    background-color: #1f2937 !important;
+  }
+
+  .dark .bg-gray-100 {
+    background-color: #374151 !important;
+  }
+
+  /* Correções para bordas no modo dark */
+  .dark .border-gray-100 {
+    border-color: #374151 !important;
+  }
+
+  .dark .border-gray-200 {
+    border-color: #374151 !important;
+  }
+
+  /* Correções para inputs no modo dark */
+  .dark input {
+    background-color: #1e1e1e !important;
+    color: #f9fafb !important;
+    border-color: #374151 !important;
+  }
+
+  .dark input::placeholder {
+    color: #9ca3af !important;
+  }
+
+  /* Correções para botões no modo dark */
+  .dark .btn-primary:hover {
+    background-color: #3b82f6 !important;
+  }
+
+  /* Correções para ícones SVG no modo dark */
+  .dark svg {
+    color: #f9fafb;
+  }
+
+  .dark .lucide {
+    stroke: #f9fafb;
+  }
+
+  /* Transições suaves para mudança de tema */
+  * {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  }
+
   .component-card:active {
     cursor: grabbing;
+  }
+  
+  /* Additional keyframes for confetti animation */
+  @keyframes confetti {
+    0% {
+      transform: translateY(0) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(-100vh) rotate(720deg);
+      opacity: 0;
+    }
   }
 }

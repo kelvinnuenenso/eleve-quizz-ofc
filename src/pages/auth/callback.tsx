@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 /**
  * Página de callback para autenticação OAuth (Google, etc.)
@@ -59,11 +60,14 @@ export default function AuthCallback() {
   }, [navigate, toast]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 transition-colors">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <div className="text-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <h2 className="text-xl font-semibold text-gray-700 mb-2">Processando autenticação...</h2>
-        <p className="text-gray-500">Aguarde enquanto completamos seu login.</p>
+        <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2 transition-colors">Processando autenticação...</h2>
+        <p className="text-gray-500 dark:text-gray-400 transition-colors">Aguarde enquanto completamos seu login.</p>
       </div>
     </div>
   );

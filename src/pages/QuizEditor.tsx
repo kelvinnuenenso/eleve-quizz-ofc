@@ -27,6 +27,7 @@ import { DemoUserManager } from '@/lib/demoUser';
 import { WebhookManager } from '@/components/integrations/WebhookManager';
 
 import { PlanBadge } from '@/components/PlanBadge';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import {
   Plus, Save, Eye, Copy, ArrowLeft, ExternalLink, Settings, BarChart3, Palette, Trophy, Trash2, Play, Zap, Target, Crown, Check, X, Clock, Loader2
 } from 'lucide-react';
@@ -348,18 +349,18 @@ const QuizEditor = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors">
+        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin dark:border-blue-400"></div>
       </div>
     );
   }
 
   if (!quiz) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="p-8 text-center">
-          <h1 className="text-2xl font-bold mb-4">Quiz não encontrado</h1>
-          <Button onClick={() => navigate('/app')}>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors">
+        <Card className="p-8 text-center dark:bg-gray-800 dark:border-gray-700">
+          <h1 className="text-2xl font-bold mb-4 dark:text-white">Quiz não encontrado</h1>
+          <Button onClick={() => navigate('/app')} className="dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white transition-colors">
             Voltar ao Dashboard
           </Button>
         </Card>
@@ -368,9 +369,9 @@ const QuizEditor = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       {/* Header */}
-      <header className="bg-card border-b sticky top-0 z-50">
+      <header className="bg-card border-b sticky top-0 z-50 dark:bg-gray-800 dark:border-gray-700 transition-colors">
         <div className={`container mx-auto ${isMobile ? 'px-2 py-2' : 'px-4 py-4'}`}>
           <div className={`flex items-center ${isMobile ? 'flex-col gap-2' : 'justify-between'}`}>
             <div className={`flex items-center ${isMobile ? 'w-full justify-between' : 'gap-4'}`}>
@@ -378,15 +379,16 @@ const QuizEditor = () => {
                 variant="ghost"
                 size={isMobile ? "sm" : "sm"}
                 onClick={() => navigate('/app')}
+                className="dark:text-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 {!isMobile && 'Voltar'}
               </Button>
               
               <div className={isMobile ? 'text-center' : ''}>
-                <h1 className={`font-bold ${isMobile ? 'text-lg' : 'text-xl'}`}>{quiz.name}</h1>
+                <h1 className={`font-bold ${isMobile ? 'text-lg' : 'text-xl'} dark:text-white transition-colors`}>{quiz.name}</h1>
                 {!isMobile && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground dark:text-gray-400 transition-colors">
                     {quiz.questions.length} perguntas • {quiz.steps?.length || 0} etapas
                   </p>
                 )}
@@ -394,33 +396,35 @@ const QuizEditor = () => {
             </div>
 
             <div className={`flex items-center ${isMobile ? 'w-full justify-center flex-wrap gap-1' : 'gap-3'}`}>
+              <ThemeToggle />
+              
               <Badge 
                 variant={quiz.status === 'published' ? 'default' : 'secondary'}
-                className={quiz.status === 'published' ? 'bg-green-100 text-green-800' : ''}
+                className={quiz.status === 'published' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'dark:bg-gray-700 dark:text-gray-200'}
               >
                 {quiz.status === 'published' ? 'Publicado' : 'Rascunho'}
               </Badge>
 
               {!isMobile && (
-                <Button variant="outline" size="sm" onClick={() => window.open(`/quiz/${quiz.public_id || quiz.publicId}`, '_blank')}>
+                <Button variant="outline" size="sm" onClick={() => window.open(`/quiz/${quiz.public_id || quiz.publicId}`, '_blank')} className="dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors">
                 <Eye className="w-4 h-4 mr-2" />
                 Preview
               </Button>
               )}
 
-              <Button variant="outline" size={isMobile ? "sm" : "sm"} onClick={copyPublicLink}>
+              <Button variant="outline" size={isMobile ? "sm" : "sm"} onClick={copyPublicLink} className="dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 transition-colors">
                 <Copy className="w-4 h-4 mr-2" />
                 {!isMobile && 'Copiar link'}
               </Button>
 
-              <Button onClick={handleSave} disabled={saving} size={isMobile ? "sm" : "sm"}>
+              <Button onClick={handleSave} disabled={saving} size={isMobile ? "sm" : "sm"} className="dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white transition-colors">
                 <Save className="w-4 h-4 mr-2" />
                 {!isMobile ? (saving ? 'Salvando...' : 'Salvar') : ''}
               </Button>
 
               <Button 
                 onClick={handlePublish} 
-                className="bg-green-600 hover:bg-green-700" 
+                className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 transition-colors" 
                 size={isMobile ? "sm" : "sm"}
               >
                 {!isMobile ? (quiz.status === 'published' ? 'Republicar' : 'Publicar') : 'Pub'}
@@ -442,40 +446,40 @@ const QuizEditor = () => {
           {/* Tabs */}
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as string)} className={isMobile ? 'mt-2' : 'mt-4'}>
             <div className={isMobile ? 'overflow-x-auto' : ''}>
-              <TabsList className={`grid w-full grid-cols-9 ${isMobile ? 'min-w-max' : 'max-w-6xl'}`}>
-                <TabsTrigger value="stages" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'}`}>
+              <TabsList className={`grid w-full grid-cols-9 ${isMobile ? 'min-w-max' : 'max-w-6xl'} dark:bg-gray-800 dark:border-gray-700`}>
+                <TabsTrigger value="stages" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'} dark:text-gray-200 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white transition-colors`}>
                   <Play className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                   {!isMobile && 'Editor'}
                 </TabsTrigger>
-                <TabsTrigger value="questions" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'}`}>
+                <TabsTrigger value="questions" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'} dark:text-gray-200 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white transition-colors`}>
                   <Settings className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                   {!isMobile && 'Perguntas'}
                 </TabsTrigger>
-                <TabsTrigger value="outcomes" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'}`}>
+                <TabsTrigger value="outcomes" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'} dark:text-gray-200 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white transition-colors`}>
                   <Trophy className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                   {!isMobile && 'Resultados'}
                 </TabsTrigger>
-                <TabsTrigger value="theme" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'}`}>
+                <TabsTrigger value="theme" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'} dark:text-gray-200 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white transition-colors`}>
                   <Palette className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                   {!isMobile && 'Tema'}
                 </TabsTrigger>
-                <TabsTrigger value="settings" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'}`}>
+                <TabsTrigger value="settings" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'} dark:text-gray-200 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white transition-colors`}>
                   <Settings className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                   {!isMobile && 'Config'}
                 </TabsTrigger>
-                <TabsTrigger value="pixels" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'}`}>
+                <TabsTrigger value="pixels" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'} dark:text-gray-200 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white transition-colors`}>
                   <Zap className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                   {!isMobile && 'Pixels'}
                 </TabsTrigger>
-                <TabsTrigger value="analytics" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'}`}>
+                <TabsTrigger value="analytics" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'} dark:text-gray-200 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white transition-colors`}>
                   <BarChart3 className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                   {!isMobile && 'Analytics'}
                 </TabsTrigger>
-                 <TabsTrigger value="engagement" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'}`}>
+                 <TabsTrigger value="engagement" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'} dark:text-gray-200 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white transition-colors`}>
                    <Target className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                    {!isMobile && 'Engajamento'}
                  </TabsTrigger>
-                 <TabsTrigger value="integrations" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'}`}>
+                 <TabsTrigger value="integrations" className={`${isMobile ? 'gap-1 text-xs px-2' : 'gap-2'} dark:text-gray-200 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white transition-colors`}>
                    <Zap className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'}`} />
                    {!isMobile && 'Webhooks'}
                  </TabsTrigger>

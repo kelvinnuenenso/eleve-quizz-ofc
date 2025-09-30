@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/integrations/supabase/client';
 import { PlanManager, PlanType } from '@/lib/planManager';
+import { v4 as uuidv4 } from 'uuid';
 
 interface Quiz {
   id: string;
@@ -169,7 +170,7 @@ export default async function handler(
 
       // Criar quiz
       const newQuiz = {
-        title: title.trim(),
+        name: title.trim(), // Corrigido: usar 'name' ao invés de 'title'
         description: description?.trim() || null,
         settings: settings || {
           theme: 'default',
@@ -180,7 +181,8 @@ export default async function handler(
           requireName: false,
         },
         questions: questions || [],
-        is_published: false,
+        status: 'draft', // Corrigido: usar 'status' ao invés de 'is_published'
+        public_id: uuidv4(), // Sempre gerar public_id para evitar erro NOT NULL
         user_id: user.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

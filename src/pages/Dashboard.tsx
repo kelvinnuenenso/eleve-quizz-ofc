@@ -41,6 +41,8 @@ import { CohortAnalysis } from '@/components/analytics/CohortAnalysis';
 import { AchievementSystem } from '@/components/gamification/AchievementSystem';
 import LeadsManager from '@/components/quiz/LeadsManager';
 import { WebhookManager } from '@/components/integrations/WebhookManager';
+import { ThemeToggle } from '@/components/ThemeToggle';
+
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -93,7 +95,7 @@ const Dashboard = () => {
     setIsCreating(true);
     try {
       const newQuizData = {
-        title: 'Novo Quiz',
+        name: 'Novo Quiz', // Corrigido: usar 'name' ao invés de 'title'
         description: 'Descreva seu quiz aqui...',
         status: 'draft',
         theme: {
@@ -344,21 +346,21 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       {/* Header */}
-      <header className="bg-card border-b">
+      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 transition-colors duration-300">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+                <h1 className="text-3xl font-bold text-gray-900 dark:text-white transition-colors duration-300">Dashboard</h1>
                 {isDemoMode && (
-                  <Badge variant="secondary" className="bg-orange-100 text-orange-800 border-orange-200">
+                  <Badge variant="secondary" className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-200 border-orange-200 dark:border-orange-700 transition-colors duration-300">
                     🎮 MODO DEMO
                   </Badge>
                 )}
               </div>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-gray-600 dark:text-gray-300 mt-1 transition-colors duration-300">
                 {isDemoMode 
                   ? "Explorando funcionalidades com dados de exemplo (somente leitura)"
                   : "Gerencie seus quizzes e monitore performance"
@@ -366,7 +368,9 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-muted-foreground">
+              <ThemeToggle />
+    
+              <span className="text-gray-600 dark:text-gray-300 transition-colors duration-300">
                 Olá, {isDemoMode ? demoUser?.name : (user?.user_metadata?.full_name || user?.email)}
               </span>
               {isDemoMode && (
@@ -376,7 +380,7 @@ const Dashboard = () => {
                     navigate('/auth');
                   }}
                   variant="outline" 
-                  className="gap-2 border-orange-200 text-orange-700 hover:bg-orange-50"
+                  className="gap-2 border-orange-200 dark:border-orange-700 text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900 transition-colors duration-300"
                   size="sm"
                 >
                   Sair do DEMO
@@ -385,7 +389,7 @@ const Dashboard = () => {
               <Button 
                 onClick={handleGenerateTestData}
                 variant="outline" 
-                className="gap-2"
+                className="gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300"
                 size="sm"
               >
                 <Database className="w-4 h-4" />
@@ -394,7 +398,7 @@ const Dashboard = () => {
               <Button 
                 onClick={handleClearTestData}
                 variant="outline" 
-                className="gap-2"
+                className="gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300"
                 size="sm"
               >
                 <Trash2 className="w-4 h-4" />
@@ -403,12 +407,12 @@ const Dashboard = () => {
               <Button 
                 onClick={() => navigate('/app/settings')} 
                 variant="outline" 
-                className="gap-2"
+                className="gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300"
               >
                 <SettingsIcon className="w-4 h-4" />
                 Configurações
               </Button>
-              <Button onClick={handleSignOut} variant="outline" className="gap-2">
+              <Button onClick={handleSignOut} variant="outline" className="gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300">
                 <LogOut className="w-4 h-4" />
                 Sair
               </Button>
@@ -420,81 +424,82 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-8">
         {/* Stats Overview */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card className="p-6">
+          <Card className="p-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-colors duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total de Quizzes</p>
-                <p className="text-2xl font-bold">{quizzes.length}</p>
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300 transition-colors duration-300">Total de Quizzes</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-300">{quizzes.length}</p>
               </div>
-              <BarChart3 className="w-8 h-8 text-blue-600" />
+              <BarChart3 className="w-8 h-8 text-blue-600 dark:text-blue-400 transition-colors duration-300" />
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-colors duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Respostas</p>
-                <p className="text-2xl font-bold">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300 transition-colors duration-300">Respostas</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
                   {quizzes.reduce((total, quiz) => total + getQuizStats(quiz.id).totalStarts, 0)}
                 </p>
               </div>
-              <Users className="w-8 h-8 text-green-600" />
+              <Users className="w-8 h-8 text-green-600 dark:text-green-400 transition-colors duration-300" />
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-colors duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Leads Capturados</p>
-                <p className="text-2xl font-bold">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300 transition-colors duration-300">Leads Capturados</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
                   {quizzes.reduce((total, quiz) => total + getQuizStats(quiz.id).totalLeads, 0)}
                 </p>
               </div>
-              <TrendingUp className="w-8 h-8 text-purple-600" />
+              <TrendingUp className="w-8 h-8 text-purple-600 dark:text-purple-400 transition-colors duration-300" />
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-colors duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Taxa Conversão</p>
-                <p className="text-2xl font-bold">
+                <p className="text-sm font-medium text-gray-600 dark:text-gray-300 transition-colors duration-300">Taxa Conversão</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
                   {quizzes.length > 0 
                     ? Math.round(quizzes.reduce((total, quiz) => total + getQuizStats(quiz.id).conversionRate, 0) / quizzes.length)
                     : 0}%
                 </p>
               </div>
-              <Eye className="w-8 h-8 text-orange-600" />
+              <Eye className="w-8 h-8 text-orange-600 dark:text-orange-400 transition-colors duration-300" />
             </div>
           </Card>
         </div>
 
         {/* Main Dashboard Content */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="leads">Leads</TabsTrigger>
-            <TabsTrigger value="integrations">Integrações</TabsTrigger>
-            <TabsTrigger value="gamification">Gamificação</TabsTrigger>
-            <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-6 bg-gray-100 dark:bg-gray-700 transition-colors duration-300">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white text-gray-600 dark:text-gray-300 transition-colors duration-300">Visão Geral</TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white text-gray-600 dark:text-gray-300 transition-colors duration-300">Analytics</TabsTrigger>
+            <TabsTrigger value="leads" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white text-gray-600 dark:text-gray-300 transition-colors duration-300">Leads</TabsTrigger>
+            <TabsTrigger value="integrations" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white text-gray-600 dark:text-gray-300 transition-colors duration-300">Integrações</TabsTrigger>
+            <TabsTrigger value="gamification" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white text-gray-600 dark:text-gray-300 transition-colors duration-300">Gamificação</TabsTrigger>
+            <TabsTrigger value="quizzes" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white text-gray-600 dark:text-gray-300 transition-colors duration-300">Quizzes</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
             {/* Quick Actions */}
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Seus Quizzes</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-300">Seus Quizzes</h2>
               <div className="flex gap-3">
                 <Button 
                   onClick={() => navigate('/app/templates')} 
                   variant="outline"
+                  className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300"
                 >
                   Ver Templates
                 </Button>
                 <Button 
                   onClick={() => setShowImporter(true)} 
                   variant="outline"
-                  className="gap-2"
+                  className="gap-2 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300"
                 >
                   <Download className="w-4 h-4" />
                   Importar Quiz
@@ -517,12 +522,12 @@ const Dashboard = () => {
             </div>
 
             {quizzes.length === 0 ? (
-              <Card className="p-12 text-center">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <BarChart3 className="w-8 h-8 text-blue-600" />
+              <Card className="p-12 text-center bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 transition-colors duration-300">
+                <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors duration-300">
+                  <BarChart3 className="w-8 h-8 text-blue-600 dark:text-blue-400 transition-colors duration-300" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Nenhum quiz criado ainda</h3>
-                <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+                <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-white transition-colors duration-300">Nenhum quiz criado ainda</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-md mx-auto transition-colors duration-300">
                   Crie seu primeiro quiz interativo e comece a converter visitantes em leads qualificados.
                 </p>
                 <Button 
@@ -544,24 +549,24 @@ const Dashboard = () => {
             ) : (
               <div className="grid gap-6">
                 {quizzes.map((quiz) => (
-                  <Card key={quiz.id} className="p-6 hover:shadow-md transition-shadow">
+                  <Card key={quiz.id} className="p-6 hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:shadow-lg dark:hover:shadow-gray-900/20">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-semibold">{quiz.name}</h3>
+                          <h3 className="text-xl font-semibold text-gray-900 dark:text-white transition-colors duration-300">{quiz.name}</h3>
                           <Badge 
                             variant={quiz.status === 'published' ? 'default' : 'secondary'}
-                            className={quiz.status === 'published' ? 'bg-green-100 text-green-800' : ''}
+                            className={quiz.status === 'published' ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 transition-colors duration-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 transition-colors duration-300'}
                           >
                             {quiz.status === 'published' ? 'Publicado' : 'Rascunho'}
                           </Badge>
                         </div>
                         
                         {quiz.description && (
-                          <p className="text-muted-foreground mb-4">{quiz.description}</p>
+                          <p className="text-gray-600 dark:text-gray-300 mb-4 transition-colors duration-300">{quiz.description}</p>
                         )}
 
-                        <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-300 transition-colors duration-300">
                           <span>{quiz?.questions?.length || 0} perguntas</span>
                           <span>{getQuizStats(quiz.id).totalStarts} respostas</span>
                           <span>{getQuizStats(quiz.id).totalLeads} leads</span>
@@ -574,6 +579,7 @@ const Dashboard = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => navigate(`/app/edit/${quiz.id}`)}
+                          className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300"
                         >
                           <Edit className="w-4 h-4 mr-1" />
                           Editar
@@ -585,6 +591,7 @@ const Dashboard = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => window.open(`/quiz/${quiz.public_id || quiz.publicId}`, '_blank')}
+                              className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300"
                             >
                               <ExternalLink className="w-4 h-4 mr-1" />
                               Ver
@@ -593,6 +600,7 @@ const Dashboard = () => {
                               variant="outline"
                               size="sm"
                               onClick={() => copyPublicLink(quiz.public_id || quiz.publicId)}
+                              className="border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-300"
                             >
                               <Copy className="w-4 h-4 mr-1" />
                               Copiar link
@@ -609,10 +617,10 @@ const Dashboard = () => {
 
           <TabsContent value="analytics" className="space-y-6">
             <Tabs defaultValue="heatmap" className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="heatmap">Mapa de Calor</TabsTrigger>
-                <TabsTrigger value="abtest">Testes A/B</TabsTrigger>
-                <TabsTrigger value="cohort">Análise de Coorte</TabsTrigger>
+              <TabsList className="bg-gray-100 dark:bg-gray-700 transition-colors duration-300">
+                <TabsTrigger value="heatmap" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white text-gray-600 dark:text-gray-300 transition-colors duration-300">Mapa de Calor</TabsTrigger>
+                <TabsTrigger value="abtest" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white text-gray-600 dark:text-gray-300 transition-colors duration-300">Testes A/B</TabsTrigger>
+                <TabsTrigger value="cohort" className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:text-gray-900 dark:data-[state=active]:text-white text-gray-600 dark:text-gray-300 transition-colors duration-300">Análise de Coorte</TabsTrigger>
               </TabsList>
               
               <TabsContent value="heatmap">

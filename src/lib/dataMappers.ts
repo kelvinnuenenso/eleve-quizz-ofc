@@ -77,13 +77,13 @@ export const mapBackendToFrontendQuiz = (backendQuiz: BackendQuiz): Partial<Fron
   return {
     id: backendQuiz.id,
     publicId: backendQuiz.id, // Backend não tem public_id, usar id como fallback
-    name: backendQuiz.titulo,
-    description: backendQuiz.descricao,
+    name: backendQuiz.name,
+    description: backendQuiz.description,
     status: backendQuiz.status,
-    theme: backendQuiz.tema ? JSON.parse(backendQuiz.tema) : undefined,
+    theme: backendQuiz.theme ? JSON.parse(backendQuiz.theme) : undefined,
     questions: [], // Backend não armazena questions no quiz
-    createdAt: backendQuiz.criado_em,
-    updatedAt: backendQuiz.atualizado_em
+    createdAt: backendQuiz.created_at,
+    updatedAt: backendQuiz.updated_at
   };
 };
 

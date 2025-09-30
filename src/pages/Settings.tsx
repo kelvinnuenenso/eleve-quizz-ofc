@@ -26,6 +26,7 @@ import {
   Palette,
   Save
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -148,28 +149,30 @@ const Settings = () => {
   if (!profile) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-gray-900 transition-colors">
       {/* Header */}
-      <header className="bg-card border-b">
+      <header className="bg-card dark:bg-gray-800 border-b dark:border-gray-700 transition-colors">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
+              <ThemeToggle />
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate('/app')}
+                className="dark:hover:bg-gray-700 dark:text-gray-300 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Voltar
               </Button>
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Configurações</h1>
-                <p className="text-muted-foreground mt-1">
+                <h1 className="text-3xl font-bold text-foreground dark:text-white transition-colors">Configurações</h1>
+                <p className="text-muted-foreground dark:text-gray-400 mt-1 transition-colors">
                   Gerencie sua conta e preferências
                 </p>
               </div>
             </div>
-            <Badge variant="secondary" className="flex items-center gap-2">
+            <Badge variant="secondary" className="flex items-center gap-2 dark:bg-gray-700 dark:text-gray-300 transition-colors">
               <Crown className="w-4 h-4" />
               Plano {profile.plan === 'free' ? 'Gratuito' : profile.plan.toUpperCase()}
             </Badge>
@@ -179,63 +182,65 @@ const Settings = () => {
 
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 max-w-2xl">
-            <TabsTrigger value="profile" className="gap-2">
+          <TabsList className="grid w-full grid-cols-5 max-w-2xl dark:bg-gray-800 dark:border-gray-700 transition-colors">
+            <TabsTrigger value="profile" className="gap-2 dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white transition-colors">
               <User className="w-4 h-4" />
               Perfil
             </TabsTrigger>
-            <TabsTrigger value="preferences" className="gap-2">
+            <TabsTrigger value="preferences" className="gap-2 dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white transition-colors">
               <SettingsIcon className="w-4 h-4" />
               Preferências
             </TabsTrigger>
-            <TabsTrigger value="data" className="gap-2">
+            <TabsTrigger value="data" className="gap-2 dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white transition-colors">
               <Database className="w-4 h-4" />
               Dados
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="gap-2">
+            <TabsTrigger value="notifications" className="gap-2 dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white transition-colors">
               <Bell className="w-4 h-4" />
               Notificações
             </TabsTrigger>
-            <TabsTrigger value="security" className="gap-2">
+            <TabsTrigger value="security" className="gap-2 dark:text-gray-300 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-white transition-colors">
               <Shield className="w-4 h-4" />
               Segurança
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-6">
-            <Card className="p-6">
+            <Card className="p-6 dark:bg-gray-800 dark:border-gray-700 transition-colors">
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-                    <User className="w-8 h-8 text-primary" />
+                  <div className="w-16 h-16 bg-primary/10 dark:bg-primary/20 rounded-full flex items-center justify-center transition-colors">
+                    <User className="w-8 h-8 text-primary dark:text-blue-400 transition-colors" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold">{profile.name}</h3>
-                    <p className="text-muted-foreground">{profile.email}</p>
+                    <h3 className="text-lg font-semibold dark:text-white transition-colors">{profile.name}</h3>
+                    <p className="text-muted-foreground dark:text-gray-400 transition-colors">{profile.email}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="name">Nome completo</Label>
+                    <Label htmlFor="name" className="dark:text-gray-300 transition-colors">Nome completo</Label>
                     <Input
                       id="name"
                       value={profile.name}
                       onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                      className="dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-colors"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="email">E-mail</Label>
+                    <Label htmlFor="email" className="dark:text-gray-300 transition-colors">E-mail</Label>
                     <Input
                       id="email"
                       type="email"
                       value={profile.email}
                       onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                      className="dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-colors"
                     />
                   </div>
                 </div>
 
-                <Button onClick={handleSaveProfile} disabled={loading}>
+                <Button onClick={handleSaveProfile} disabled={loading} className="dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors">
                   <Save className="w-4 h-4 mr-2" />
                   {loading ? 'Salvando...' : 'Salvar alterações'}
                 </Button>
@@ -244,31 +249,31 @@ const Settings = () => {
 
             {/* Account Stats */}
             <div className="grid grid-cols-3 gap-4">
-              <Card className="p-4 text-center">
-                <div className="text-2xl font-bold text-primary">{allQuizzes.length}</div>
-                <div className="text-sm text-muted-foreground">Quizzes criados</div>
+              <Card className="p-4 text-center dark:bg-gray-800 dark:border-gray-700 transition-colors">
+                <div className="text-2xl font-bold text-primary dark:text-blue-400 transition-colors">{allQuizzes.length}</div>
+                <div className="text-sm text-muted-foreground dark:text-gray-400 transition-colors">Quizzes criados</div>
               </Card>
-              <Card className="p-4 text-center">
-                <div className="text-2xl font-bold text-green-600">{allLeads.length}</div>
-                <div className="text-sm text-muted-foreground">Leads capturados</div>
+              <Card className="p-4 text-center dark:bg-gray-800 dark:border-gray-700 transition-colors">
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400 transition-colors">{allLeads.length}</div>
+                <div className="text-sm text-muted-foreground dark:text-gray-400 transition-colors">Leads capturados</div>
               </Card>
-              <Card className="p-4 text-center">
-                <div className="text-2xl font-bold text-blue-600">
+              <Card className="p-4 text-center dark:bg-gray-800 dark:border-gray-700 transition-colors">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 transition-colors">
                   {Math.round(storageInfo.percentage)}%
                 </div>
-                <div className="text-sm text-muted-foreground">Armazenamento usado</div>
+                <div className="text-sm text-muted-foreground dark:text-gray-400 transition-colors">Armazenamento usado</div>
               </Card>
             </div>
           </TabsContent>
 
           <TabsContent value="preferences" className="space-y-6">
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Preferências Gerais</h3>
+            <Card className="p-6 dark:bg-gray-800 dark:border-gray-700 transition-colors">
+              <h3 className="text-lg font-semibold mb-4 dark:text-white transition-colors">Preferências Gerais</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Salvamento automático</Label>
-                    <p className="text-sm text-muted-foreground">
+                    <Label className="dark:text-gray-300 transition-colors">Salvamento automático</Label>
+                    <p className="text-sm text-muted-foreground dark:text-gray-400 transition-colors">
                       Salva automaticamente as alterações enquanto você edita
                     </p>
                   </div>
@@ -285,8 +290,8 @@ const Settings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Tema escuro</Label>
-                    <p className="text-sm text-muted-foreground">
+                    <Label className="dark:text-gray-300 transition-colors">Tema escuro</Label>
+                    <p className="text-sm text-muted-foreground dark:text-gray-400 transition-colors">
                       Ativar modo escuro na interface
                     </p>
                   </div>
@@ -308,29 +313,29 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="data" className="space-y-6">
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Gerenciamento de Dados</h3>
+            <Card className="p-6 dark:bg-gray-800 dark:border-gray-700 transition-colors">
+              <h3 className="text-lg font-semibold mb-4 dark:text-white transition-colors">Gerenciamento de Dados</h3>
               <div className="space-y-6">
                 <div>
-                  <h4 className="font-medium mb-2">Uso do armazenamento</h4>
+                  <h4 className="font-medium mb-2 dark:text-gray-300 transition-colors">Uso do armazenamento</h4>
                   <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm dark:text-gray-400 transition-colors">
                       <span>Usado: {Math.round(storageInfo.used / 1024)} KB</span>
                       <span>Total: {Math.round(storageInfo.total / 1024 / 1024)} MB</span>
                     </div>
-                    <Progress value={storageInfo.percentage} className="h-2" />
+                    <Progress value={storageInfo.percentage} className="h-2 dark:bg-gray-700 transition-colors" />
                   </div>
                 </div>
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-medium">Exportar dados</h4>
-                      <p className="text-sm text-muted-foreground">
+                      <h4 className="font-medium dark:text-gray-300 transition-colors">Exportar dados</h4>
+                      <p className="text-sm text-muted-foreground dark:text-gray-400 transition-colors">
                         Baixe um backup completo dos seus dados
                       </p>
                     </div>
-                    <Button onClick={handleExportData} variant="outline">
+                    <Button onClick={handleExportData} variant="outline" className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors">
                       <Download className="w-4 h-4 mr-2" />
                       Exportar
                     </Button>
@@ -338,8 +343,8 @@ const Settings = () => {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="font-medium">Importar dados</h4>
-                      <p className="text-sm text-muted-foreground">
+                      <h4 className="font-medium dark:text-gray-300 transition-colors">Importar dados</h4>
+                      <p className="text-sm text-muted-foreground dark:text-gray-400 transition-colors">
                         Restaure um backup anterior
                       </p>
                     </div>
@@ -351,7 +356,7 @@ const Settings = () => {
                         className="hidden"
                         id="import-file"
                       />
-                      <Button variant="outline" asChild>
+                      <Button variant="outline" asChild className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors">
                         <label htmlFor="import-file" className="cursor-pointer">
                           <Upload className="w-4 h-4 mr-2" />
                           Importar
@@ -363,18 +368,19 @@ const Settings = () => {
               </div>
             </Card>
 
-            <Card className="p-6 border-destructive/20">
-              <h3 className="text-lg font-semibold mb-4 text-destructive">Zona de Perigo</h3>
+            <Card className="p-6 border-destructive/20 dark:bg-gray-800 dark:border-red-900/50 transition-colors">
+              <h3 className="text-lg font-semibold mb-4 text-destructive dark:text-red-400 transition-colors">Zona de Perigo</h3>
               <div className="space-y-4">
                 <div>
-                  <h4 className="font-medium">Limpar todos os dados</h4>
-                  <p className="text-sm text-muted-foreground mb-3">
+                  <h4 className="font-medium dark:text-gray-300 transition-colors">Limpar todos os dados</h4>
+                  <p className="text-sm text-muted-foreground dark:text-gray-400 mb-3 transition-colors">
                     Remove permanentemente todos os quizzes, respostas, leads e configurações.
                     Esta ação não pode ser desfeita.
                   </p>
                   <Button 
                     variant="destructive" 
                     onClick={handleClearAllData}
+                    className="dark:bg-red-600 dark:hover:bg-red-700 transition-colors"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
                     Limpar todos os dados
@@ -385,14 +391,14 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="notifications" className="space-y-6">
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Preferências de Notificação</h3>
+            <Card className="p-6 dark:bg-gray-800 dark:border-gray-700 transition-colors">
+              <h3 className="text-lg font-semibold mb-4 dark:text-white transition-colors">Notificações</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Notificações por e-mail</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receba atualizações sobre novos recursos e dicas
+                    <Label className="dark:text-gray-200 transition-colors">Notificações por email</Label>
+                    <p className="text-sm text-muted-foreground dark:text-gray-400 transition-colors">
+                      Receba atualizações importantes por email
                     </p>
                   </div>
                   <Switch
@@ -408,8 +414,8 @@ const Settings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Notificações de leads</Label>
-                    <p className="text-sm text-muted-foreground">
+                    <Label className="dark:text-gray-200 transition-colors">Notificações de leads</Label>
+                    <p className="text-sm text-muted-foreground dark:text-gray-400 transition-colors">
                       Seja notificado quando capturar novos leads
                     </p>
                   </div>
@@ -418,8 +424,8 @@ const Settings = () => {
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <Label>Relatórios semanais</Label>
-                    <p className="text-sm text-muted-foreground">
+                    <Label className="dark:text-gray-200 transition-colors">Relatórios semanais</Label>
+                    <p className="text-sm text-muted-foreground dark:text-gray-400 transition-colors">
                       Receba resumos semanais de performance
                     </p>
                   </div>
@@ -430,25 +436,25 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="security" className="space-y-6">
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Segurança</h3>
+            <Card className="p-6 dark:bg-gray-800 dark:border-gray-700 transition-colors">
+              <h3 className="text-lg font-semibold mb-4 dark:text-white transition-colors">Segurança</h3>
               <div className="space-y-4">
                 <div>
-                  <Label>Alterar senha</Label>
-                  <p className="text-sm text-muted-foreground mb-3">
+                  <Label className="dark:text-gray-200 transition-colors">Alterar senha</Label>
+                  <p className="text-sm text-muted-foreground dark:text-gray-400 mb-3 transition-colors">
                     Mantenha sua conta segura com uma senha forte
                   </p>
-                  <Button variant="outline" disabled>
+                  <Button variant="outline" disabled className="dark:border-gray-600 dark:text-gray-400 transition-colors">
                     Alterar senha (em breve)
                   </Button>
                 </div>
 
                 <div>
-                  <Label>Autenticação de dois fatores</Label>
-                  <p className="text-sm text-muted-foreground mb-3">
+                  <Label className="dark:text-gray-200 transition-colors">Autenticação de dois fatores</Label>
+                  <p className="text-sm text-muted-foreground dark:text-gray-400 mb-3 transition-colors">
                     Adicione uma camada extra de segurança à sua conta
                   </p>
-                  <Button variant="outline" disabled>
+                  <Button variant="outline" disabled className="dark:border-gray-600 dark:text-gray-400 transition-colors">
                     Configurar 2FA (em breve)
                   </Button>
                 </div>

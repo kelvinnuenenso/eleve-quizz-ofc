@@ -28,6 +28,8 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     // Check if demo mode is active on app start
+    if (typeof window === 'undefined') return;
+    
     const demoModeActive = localStorage.getItem('demo_mode_active') === 'true';
     if (demoModeActive) {
       const savedDemoUser = localStorage.getItem('demo_user');
@@ -68,8 +70,10 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
       localDB.saveUserProfile(demoProfile);
       
       // Set demo mode flags
-      localStorage.setItem('demo_mode_active', 'true');
-      localStorage.setItem('demo_user', JSON.stringify(demoDemoUser));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('demo_mode_active', 'true');
+        localStorage.setItem('demo_user', JSON.stringify(demoDemoUser));
+      }
       
       setDemoUser(demoDemoUser);
       setIsDemoMode(true);
@@ -83,8 +87,10 @@ export function DemoModeProvider({ children }: { children: ReactNode }) {
 
   const exitDemoMode = () => {
     // Clear demo mode flags
-    localStorage.removeItem('demo_mode_active');
-    localStorage.removeItem('demo_user');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('demo_mode_active');
+      localStorage.removeItem('demo_user');
+    }
     
     // Clear demo data
     localDB.clearUserProfile();

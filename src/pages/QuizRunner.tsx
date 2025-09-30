@@ -418,14 +418,14 @@ const QuizRunner = () => {
                 <Button
                   key={score}
                   variant="outline"
-                  className="aspect-square text-sm hover:bg-blue-100"
+                  className="aspect-square text-sm hover:bg-blue-100 dark:hover:bg-blue-900/20 dark:border-gray-600 dark:text-gray-300 transition-colors"
                   onClick={() => handleAnswer(score)}
                 >
                   {score}
                 </Button>
               ))}
             </div>
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="flex justify-between text-xs text-muted-foreground dark:text-gray-400 transition-colors">
               <span>Não recomendaria</span>
               <span>Recomendaria totalmente</span>
             </div>
@@ -440,7 +440,7 @@ const QuizRunner = () => {
               min={currentQuestion.settings?.min || 0}
               max={currentQuestion.settings?.max || 10}
               step={currentQuestion.settings?.step || 1}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+              className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer transition-colors"
               onChange={(e) => handleAnswer(parseInt(e.target.value))}
             />
           </div>
@@ -463,7 +463,7 @@ const QuizRunner = () => {
               inputMode="tel"
               placeholder={currentQuestion.settings?.placeholder || "(11) 99999-9999"}
               required={currentQuestion.required}
-              className="text-center text-lg py-3"
+              className="text-center text-lg py-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 transition-colors"
               autoComplete="tel"
             />
             <Button 
@@ -611,7 +611,7 @@ const QuizRunner = () => {
               type="text"
               placeholder={currentQuestion.settings?.placeholder || "Digite sua resposta..."}
               required={currentQuestion.required}
-              className="text-center text-lg py-3"
+              className="text-center text-lg py-3 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 transition-colors"
             />
             <Button 
               type="submit" 
@@ -633,8 +633,8 @@ const QuizRunner = () => {
       default:
         return (
           <div className="text-center">
-            <p className="text-muted-foreground">Tipo de pergunta não suportado ainda.</p>
-            <Button onClick={() => handleAnswer('skipped')} className="mt-4">
+            <p className="text-muted-foreground dark:text-gray-400 transition-colors">Tipo de pergunta não suportado ainda.</p>
+            <Button onClick={() => handleAnswer('skipped')} className="mt-4 dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors">
               Pular
             </Button>
           </div>
@@ -644,11 +644,11 @@ const QuizRunner = () => {
 
   if (isSubmitting) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
-        <Card className="p-8 text-center max-w-md">
-          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold mb-2">Processando suas respostas...</h2>
-          <p className="text-muted-foreground">Em instantes você verá seu resultado personalizado!</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors">
+        <Card className="p-8 text-center max-w-md dark:bg-gray-800 dark:border-gray-700 transition-colors">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4 dark:border-blue-400 dark:border-t-transparent"></div>
+          <h2 className="text-xl font-semibold mb-2 dark:text-white transition-colors">Processando suas respostas...</h2>
+          <p className="text-muted-foreground dark:text-gray-300 transition-colors">Em instantes você verá seu resultado personalizado!</p>
         </Card>
       </div>
     );
@@ -681,7 +681,7 @@ const QuizRunner = () => {
     >
     <div 
       ref={gesturesRef}
-      className="min-h-screen"
+      className="min-h-screen dark:bg-gray-900 transition-colors"
       style={{ 
         backgroundColor: quiz.theme?.background || '#F8FAFC',
         color: quiz.theme?.text || '#0B0B0B',
@@ -691,7 +691,7 @@ const QuizRunner = () => {
       {/* Header with progress */}
       {quiz.theme?.showProgress !== false && (
         <div 
-          className="backdrop-blur-sm border-b sticky top-0 z-50"
+          className="backdrop-blur-sm border-b sticky top-0 z-50 dark:border-gray-700 transition-colors"
           style={{ 
             backgroundColor: quiz.theme?.cardBackground ? `${quiz.theme.cardBackground}E6` : '#FFFFFFCC'
           }}
@@ -751,7 +751,7 @@ const QuizRunner = () => {
       <div className={`container mx-auto px-4 py-8 ${getFontSize()}`}>
         <div className={`mx-auto ${getMaxWidth()}`}>
           <Card 
-            className="p-8 shadow-lg border-0"
+            className="p-8 shadow-lg border-0 dark:bg-gray-800 dark:shadow-xl transition-colors"
             style={{
               backgroundColor: quiz.theme?.cardBackground || '#FFFFFF',
               borderRadius: quiz.theme?.borderRadius || '12px'
@@ -796,7 +796,7 @@ const QuizRunner = () => {
 
       {/* Achievement Popup */}
       {showAchievement && (
-        <div className="fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50 animate-fade-in">
+        <div className="fixed top-4 right-4 bg-green-500 dark:bg-green-600 text-white p-4 rounded-lg shadow-lg z-50 animate-fade-in transition-colors">
           <h3 className="font-bold">{showAchievement.title}</h3>
           <p className="text-sm">{showAchievement.description}</p>
         </div>

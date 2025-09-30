@@ -74,23 +74,24 @@ const Templates = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background dark:bg-gray-900 transition-colors">
       {/* Header */}
-      <header className="bg-card border-b">
+      <header className="bg-card dark:bg-gray-800 border-b dark:border-gray-700 transition-colors">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate('/app')}
+              className="dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Voltar
             </Button>
             
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Templates de Quiz</h1>
-              <p className="text-muted-foreground mt-1">
+              <h1 className="text-3xl font-bold text-foreground dark:text-white transition-colors">Templates de Quiz</h1>
+              <p className="text-muted-foreground dark:text-gray-300 mt-1 transition-colors">
                 Comece rapidamente com templates profissionais
               </p>
             </div>
@@ -107,11 +108,11 @@ const Templates = () => {
       </div>
 
       {isCreating && (
-        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-background p-6 rounded-lg shadow-xl">
+        <div className="fixed inset-0 bg-background/80 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center z-50 transition-colors">
+          <div className="bg-background dark:bg-gray-800 p-6 rounded-lg shadow-xl dark:shadow-2xl transition-colors">
             <div className="flex items-center gap-3">
-              <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-              <span>Criando quiz a partir do template...</span>
+              <div className="w-6 h-6 border-2 border-primary dark:border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+              <span className="dark:text-gray-200 transition-colors">Criando quiz a partir do template...</span>
             </div>
           </div>
         </div>

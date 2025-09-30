@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useDemoMode } from '@/hooks/useDemoMode';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export default function Auth() {
   const { user, loading, signIn, signUp, signInWithGoogle } = useAuth();
@@ -139,23 +140,26 @@ export default function Auth() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
-        <div className="animate-pulse">Carregando...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white to-gray-50 dark:from-black dark:to-gray-900 transition-colors duration-300">
+        <div className="animate-pulse text-gray-900 dark:text-white">Carregando...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted/30 p-4">
-      <Card className="w-full max-w-md shadow-xl border-0">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white to-gray-50 dark:from-black dark:to-gray-900 transition-colors duration-300 p-4">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      <Card className="w-full max-w-md shadow-xl border-0 bg-white dark:bg-gray-800 transition-colors duration-300">
         <CardHeader className="text-center space-y-4">
-          <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto">
-            <span className="text-primary-foreground font-bold text-2xl">EQ</span>
+          <div className="w-16 h-16 bg-blue-600 dark:bg-blue-500 rounded-2xl flex items-center justify-center mx-auto transition-colors duration-300">
+            <span className="text-white font-bold text-2xl">EQ</span>
           </div>
-          <CardTitle className="text-2xl font-bold text-primary">
+          <CardTitle className="text-2xl font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300">
             Quiz Platform
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-gray-600 dark:text-gray-300 transition-colors duration-300">
             {isSignUp ? 'Crie sua conta gratuita' : 'Entre em sua conta'}
           </CardDescription>
         </CardHeader>
@@ -164,7 +168,7 @@ export default function Auth() {
           {/* Google Login Button */}
           <Button 
             onClick={handleGoogleLogin}
-            className="w-full bg-white hover:bg-gray-50 text-gray-900 border border-gray-300"
+            className="w-full bg-white hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 transition-colors duration-300"
             size="lg"
             disabled={loading || authLoading}
           >
@@ -182,7 +186,7 @@ export default function Auth() {
               <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
+              <span className="bg-white dark:bg-gray-800 px-2 text-gray-500 dark:text-gray-400 transition-colors duration-300">
                 Ou use email
               </span>
             </div>
@@ -223,7 +227,7 @@ export default function Auth() {
 
             <Button 
               type="submit"
-              className="w-full"
+              className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white transition-colors duration-300"
               size="lg"
               disabled={loading || authLoading}
             >
@@ -235,7 +239,7 @@ export default function Auth() {
             <Button
               variant="link"
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-primary"
+              className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors duration-300"
             >
               {isSignUp 
                 ? 'Já tem uma conta? Faça login' 
@@ -247,18 +251,18 @@ export default function Auth() {
             <Button
               onClick={handleDemoMode}
               variant="outline"
-              className="w-full border-dashed border-2 hover:bg-muted/50"
+              className="w-full border-dashed border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white transition-colors duration-300"
               size="lg"
               disabled={loading || authLoading}
             >
               🎮 Entrar em Modo DEMO
             </Button>
             
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">
               💡 <strong>Dica:</strong> Use o Google para acesso rápido e seguro!
             </p>
             
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-gray-500 dark:text-gray-400 transition-colors duration-300">
               🎮 <strong>Modo DEMO:</strong> Explore as funcionalidades com dados de exemplo (somente leitura)
             </p>
           </div>

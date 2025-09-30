@@ -168,12 +168,12 @@ export default async function handler(
         updated_at: new Date().toISOString(),
       };
 
-      if (title !== undefined) updateData.title = title.trim();
+      if (title !== undefined) updateData.name = title.trim(); // Corrigido: usar 'name'
       if (description !== undefined) updateData.description = description?.trim() || null;
       if (settings !== undefined) updateData.settings = settings;
       if (questions !== undefined) updateData.questions = questions;
       if (is_published !== undefined) {
-        updateData.is_published = is_published;
+        updateData.status = is_published ? 'published' : 'draft'; // Corrigido: usar 'status'
         // Gerar public_id se estiver publicando pela primeira vez
         if (is_published && !quiz.public_id) {
           updateData.public_id = uuidv4();

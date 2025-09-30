@@ -1,9 +1,10 @@
 import React, { useEffect } from "react";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { DemoModeProvider } from "@/hooks/useDemoMode";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { TooltipProvider } from "@/components/ui/simple-tooltip";
 import { EnhancedErrorBoundary } from "@/components/EnhancedErrorBoundary";
 
@@ -113,18 +114,18 @@ const App = () => {
       showErrorDetails={process.env.NODE_ENV === 'development'}
     >
       <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <DemoModeProvider>
-            <AuthProvider>
-              <BrowserRouter>
-                <EnhancedErrorBoundary componentName="Router">
-                  <AppContent />
-                  <Sonner />
-                </EnhancedErrorBoundary>
-              </BrowserRouter>
-            </AuthProvider>
-          </DemoModeProvider>
-        </TooltipProvider>
+        <ThemeProvider>
+          <AuthProvider>
+          <TooltipProvider>
+            <BrowserRouter>
+              <DemoModeProvider>
+                <AppContent />
+                <Toaster />
+              </DemoModeProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </EnhancedErrorBoundary>
   );

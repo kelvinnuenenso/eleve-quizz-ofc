@@ -100,10 +100,10 @@ const ResultPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors">
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando resultado...</p>
+          <div className="w-8 h-8 border-4 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground dark:text-gray-300 transition-colors">Carregando resultado...</p>
         </div>
       </div>
     );
@@ -111,13 +111,13 @@ const ResultPage = () => {
 
   if (!result || !quiz || !outcome) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
-        <Card className="p-8 text-center max-w-md">
-          <h1 className="text-2xl font-bold mb-4">Resultado não encontrado</h1>
-          <p className="text-muted-foreground mb-6">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors">
+        <Card className="p-8 text-center max-w-md dark:bg-gray-800 dark:border-gray-700 transition-colors">
+          <h1 className="text-2xl font-bold mb-4 dark:text-white transition-colors">Resultado não encontrado</h1>
+          <p className="text-muted-foreground dark:text-gray-300 mb-6 transition-colors">
             O resultado que você está procurando não existe ou foi removido.
           </p>
-          <Button onClick={() => navigate('/')}>
+          <Button onClick={() => navigate('/')} className="dark:bg-blue-600 dark:hover:bg-blue-700 transition-colors">
             Voltar ao início
           </Button>
         </Card>
@@ -131,19 +131,19 @@ const ResultPage = () => {
     : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 transition-colors">
       {/* Header */}
-      <div className="bg-background/80 backdrop-blur-sm border-b">
+      <div className="bg-background/80 dark:bg-gray-800/80 backdrop-blur-sm border-b dark:border-gray-700 transition-colors">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-xs">EQ</span>
+              <div className="w-6 h-6 bg-primary dark:bg-blue-600 rounded flex items-center justify-center transition-colors">
+                <span className="text-primary-foreground dark:text-white font-bold text-xs transition-colors">EQ</span>
               </div>
-              <span className="font-semibold text-primary text-sm">Quiz Platform</span>
+              <span className="font-semibold text-primary dark:text-blue-400 text-sm transition-colors">Quiz Platform</span>
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={shareResult}>
+              <Button variant="outline" size="sm" onClick={shareResult} className="dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors">
                 <Share2 className="w-4 h-4 mr-2" />
                 Compartilhar
               </Button>
@@ -155,7 +155,7 @@ const ResultPage = () => {
       {/* Result content */}
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-2xl mx-auto">
-          <Card className="p-8 shadow-xl border-0 mb-8">
+          <Card className="p-8 shadow-xl border-0 mb-8 dark:bg-gray-800 dark:shadow-2xl transition-colors">
             <div className="text-center mb-8">
               <div 
                 className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
@@ -167,25 +167,25 @@ const ResultPage = () => {
                 />
               </div>
               
-              <h1 className="text-3xl font-bold mb-4">
+              <h1 className="text-3xl font-bold mb-4 dark:text-white transition-colors">
                 {outcome.title}
               </h1>
               
-              <p className="text-lg text-muted-foreground mb-6">
+              <p className="text-lg text-muted-foreground dark:text-gray-300 mb-6 transition-colors">
                 {outcome.description}
               </p>
 
               {result.score !== undefined && (
-                <div className="bg-slate-50 rounded-lg p-4 mb-6">
+                <div className="bg-slate-50 dark:bg-gray-700 rounded-lg p-4 mb-6 transition-colors">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Sua pontuação</span>
-                    <Badge variant="secondary" className="text-lg px-3 py-1">
+                    <span className="text-sm font-medium dark:text-gray-200 transition-colors">Sua pontuação</span>
+                    <Badge variant="secondary" className="text-lg px-3 py-1 dark:bg-gray-600 dark:text-gray-200 transition-colors">
                       {result.score} pontos
                     </Badge>
                   </div>
                   <Progress 
                     value={(result.score / 100) * 100} 
-                    className="h-3"
+                    className="h-3 dark:bg-gray-600 transition-colors"
                   />
                 </div>
               )}
@@ -217,12 +217,12 @@ const ResultPage = () => {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button 
                   variant="outline" 
-                  className="flex-1"
+                  className="flex-1 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors"
                   onClick={() => window.open(`/q/${quiz.publicId}`, '_blank')}
                 >
                   Fazer novamente
                 </Button>
-                <Button variant="outline" className="flex-1" onClick={shareResult}>
+                <Button variant="outline" className="flex-1 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors" onClick={shareResult}>
                   <Share2 className="w-4 h-4 mr-2" />
                   Compartilhar resultado
                 </Button>

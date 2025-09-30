@@ -127,7 +127,7 @@ export default async function handler(
       .from('quizzes')
       .select('*')
       .eq('id', id)
-      .eq('is_published', true)
+      .eq('status', 'published')
       .single();
 
     if (quizError || !quiz) {

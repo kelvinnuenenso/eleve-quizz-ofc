@@ -1,106 +1,197 @@
-# Deploy no Vercel - Quiz Lift Off
+# 🚀 Deploy no Vercel - Quiz Lift Off
 
-## Configurações Necessárias
+## 📋 Pré-requisitos
 
-### 1. Variáveis de Ambiente no Vercel
+- Conta no [Vercel](https://vercel.com/)
+- Projeto Supabase configurado
+- Repositório GitHub conectado
+- Domínio personalizado (opcional)
 
-No painel do Vercel, configure as seguintes variáveis de ambiente:
+## ⚙️ Configuração das Variáveis de Ambiente
+
+### 🔐 Variáveis Obrigatórias
+
+No painel do Vercel (`Settings > Environment Variables`), configure:
 
 ```bash
-# Frontend (Vite)
-VITE_SUPABASE_URL=https://rijvidluwvzvatoarqoe.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpanZpZGx1d3Z6dmF0b2FycW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1Njc0MTAsImV4cCI6MjA3MTE0MzQxMH0.Wm2aXhLV6ZO8ZeSpWwzdskisV_VIQbQvaHmHk0CLVTg
+# 🔑 Supabase - Frontend (Públicas)
+VITE_SUPABASE_URL=https://SEU_PROJETO.supabase.co
+VITE_SUPABASE_ANON_KEY=sua_chave_publica_supabase
 
-# Next.js compatibility
-NEXT_PUBLIC_SUPABASE_URL=https://rijvidluwvzvatoarqoe.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpanZpZGx1d3Z6dmF0b2FycW9lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1Njc0MTAsImV4cCI6MjA3MTE0MzQxMH0.Wm2aXhLV6ZO8ZeSpWwzdskisV_VIQbQvaHmHk0CLVTg
+# 🔒 Supabase - Backend (PRIVADA - NUNCA EXPOR)
+SUPABASE_SERVICE_ROLE_KEY=sua_chave_de_servico_supabase
 
-# Backend/API (PRIVADA - não expor)
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpanZpZGx1d3Z6dmF0b2FycW9lIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NTU2NzQxMCwiZXhwIjoyMDcxMTQzNDEwfQ.Fc4_rKTUmQuFW5CBQJeGFXTnzr0Bwp1wqzFewthD1Lg
-
-# Configurações de produção
+# 🌐 Configurações de Produção
 NODE_ENV=production
 VITE_USE_LOCAL_API=false
-NEXT_PUBLIC_ANALYTICS_ENABLED=true
-NEXT_PUBLIC_DEBUG_MODE=false
+VITE_APP_URL=https://seu-dominio.vercel.app
 
-# CORS
-ALLOWED_ORIGINS=https://quiz-lift-off-76.vercel.app
+# 🛡️ Segurança e CORS
+ALLOWED_ORIGINS=https://seu-dominio.vercel.app,https://seu-dominio-preview.vercel.app
 
-# Rate Limiting
+# ⚡ Performance e Cache
 RATE_LIMIT_MAX_REQUESTS=100
 RATE_LIMIT_WINDOW_MS=900000
-
-# Cache
 CACHE_TTL=3600
+
+# 📊 Analytics (Opcional)
+VITE_ANALYTICS_ENABLED=true
+VITE_DEBUG_MODE=false
 ```
 
-### 2. Configuração do Build
+### 🔍 Como Obter as Chaves do Supabase
 
-O projeto está configurado para:
-- **Frontend**: Build estático com Vite (pasta `dist`)
-- **Backend**: Servidor Express como função serverless (`consolidated-server.cjs`)
+1. Acesse o [Supabase Dashboard](https://app.supabase.com/)
+2. Selecione seu projeto
+3. Vá para `Settings > API`
+4. Copie:
+   - **Project URL** → `VITE_SUPABASE_URL`
+   - **Project API Key (anon/public)** → `VITE_SUPABASE_ANON_KEY`
+   - **Project API Key (service_role)** → `SUPABASE_SERVICE_ROLE_KEY`
 
-### 3. Estrutura de APIs
+> ⚠️ **IMPORTANTE**: Nunca commite a `service_role_key` no código!
 
-As APIs estão disponíveis em:
-- `/api/consolidated/quizzes` - Gerenciamento de quizzes
-- `/api/consolidated/main` - APIs principais
-- `/api/consolidated/health` - Health check
+## 🏗️ Configuração do Build
 
-### 4. Comandos de Deploy
+### Arquitetura do Deploy
+
+- **Frontend**: SPA React + Vite → Build estático (`dist/`)
+- **Backend**: Express.js → Serverless Functions (`api/`)
+- **Database**: Supabase PostgreSQL
+- **Storage**: Vercel Edge Network
+
+### Estrutura de APIs
+
+| Endpoint | Descrição | Método |
+|----------|-----------|--------|
+| `/api/consolidated/health` | Health check do sistema | GET |
+| `/api/consolidated/quizzes` | CRUD de quizzes | GET, POST, PUT, DELETE |
+| `/api/consolidated/main` | APIs principais (usuários, auth) | GET, POST |
+
+## 🚀 Processo de Deploy
+
+### 1. Deploy Automático (Recomendado)
 
 ```bash
-# Build de produção
-npm run build:prod
+# 1. Commit suas mudanças
+git add .
+git commit -m "feat: nova funcionalidade"
 
-# Deploy automático via Git
+# 2. Push para main (deploy automático)
 git push origin main
 ```
 
-### 5. Verificação do Deploy
+### 2. Deploy Manual
 
-Após o deploy, verifique:
-1. **Health Check**: `https://seu-dominio.vercel.app/api/consolidated/health`
-2. **Frontend**: Carregamento da página principal
-3. **Autenticação**: Login/logout funcionando
-4. **Criação de Quiz**: Botão "Criar Quiz" funcionando
+```bash
+# Build local para teste
+npm run build:prod
 
-### 6. Configuração do Supabase para Produção
-
-#### URLs de Redirecionamento
-No painel do Supabase (Authentication > URL Configuration), configure:
-
-**Site URL:**
-```
-https://quiz-lift-off-76.vercel.app
+# Deploy via Vercel CLI
+npx vercel --prod
 ```
 
-**Additional Redirect URLs:**
+## ✅ Verificação Pós-Deploy
+
+### Checklist de Validação
+
+- [ ] **Health Check**: `https://seu-dominio.vercel.app/api/consolidated/health`
+- [ ] **Frontend**: Página inicial carrega sem erros
+- [ ] **Autenticação**: Login/logout funcionando
+- [ ] **Google OAuth**: Login social funcionando
+- [ ] **Criação de Quiz**: Fluxo completo funcional
+- [ ] **Responsividade**: Layout mobile/desktop
+- [ ] **Performance**: Lighthouse Score > 90
+
+## 🔧 Configuração do Supabase
+
+### URLs de Autenticação
+
+No [Supabase Dashboard](https://app.supabase.com/) → `Authentication` → `URL Configuration`:
+
+```bash
+# Site URL
+https://seu-dominio.vercel.app
+
+# Redirect URLs
+https://seu-dominio.vercel.app/auth/callback
+https://seu-dominio.vercel.app/app
+https://seu-dominio.vercel.app/app/**
+
+# Para previews do Vercel
+https://*.vercel.app/auth/callback
 ```
-https://quiz-lift-off-76.vercel.app/app
-https://quiz-lift-off-76.vercel.app/app/**
+
+### Configuração OAuth (Google)
+
+1. Acesse `Authentication` → `Providers` → `Google`
+2. Configure:
+   - **Client ID**: Seu Google Client ID
+   - **Client Secret**: Seu Google Client Secret
+   - **Redirect URL**: `https://SEU_PROJETO.supabase.co/auth/v1/callback`
+
+## 🐛 Troubleshooting
+
+### ❌ Erro 404 nas APIs
+
+**Causa**: Configuração incorreta do `vercel.json`
+
+**Solução**:
+```bash
+# Verifique se existe o arquivo vercel.json na raiz
+cat vercel.json
+
+# Deve conter as rotas das APIs
 ```
 
-> ⚠️ **IMPORTANTE**: Sem essas URLs configuradas, o signup/login não funcionará em produção!
+### ❌ Erro de CORS
 
-### 7. Troubleshooting
+**Causa**: Domínio não autorizado
 
-#### Erro 404 nas APIs
-- Verifique se o `vercel.json` está correto
-- Confirme que as variáveis de ambiente estão configuradas
+**Solução**:
+```bash
+# Adicione seu domínio em ALLOWED_ORIGINS
+ALLOWED_ORIGINS=https://seu-dominio.vercel.app,https://seu-dominio-preview.vercel.app
+```
 
-#### Erro de CORS
-- Adicione seu domínio em `ALLOWED_ORIGINS`
-- Verifique se o domínio está correto no `consolidated-server.cjs`
+### ❌ Erro de Autenticação
 
-#### Erro de Autenticação
-- Confirme as chaves do Supabase
-- Verifique se `SUPABASE_SERVICE_ROLE_KEY` está configurada
-- **Verifique as URLs de redirecionamento no Supabase**
+**Causa**: Chaves do Supabase incorretas ou URLs não configuradas
 
-#### Erro no Signup/Login em Produção
-- Confirme que as URLs de redirecionamento estão configuradas no Supabase
+**Solução**:
+1. Verifique as variáveis de ambiente no Vercel
+2. Confirme as URLs de redirecionamento no Supabase
+3. Teste as chaves localmente primeiro
+
+### ❌ Build Falha
+
+**Causa**: Dependências ou TypeScript errors
+
+**Solução**:
+```bash
+# Teste o build localmente
+npm run build:prod
+
+# Verifique erros de TypeScript
+npm run type-check
+
+# Limpe cache se necessário
+npm run clean && npm install
+```
+
+## 📊 Monitoramento
+
+### Logs e Analytics
+
+- **Vercel Dashboard**: Logs de deploy e runtime
+- **Supabase Dashboard**: Logs de database e auth
+- **Browser DevTools**: Erros de frontend
+
+### Performance
+
+- **Vercel Analytics**: Métricas de performance
+- **Lighthouse**: Auditoria de qualidade
+- **Supabase Metrics**: Performance do database
 - Verifique se o domínio da produção está na lista de URLs permitidas
 
 ### 8. Logs de Debug

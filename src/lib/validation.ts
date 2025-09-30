@@ -111,17 +111,11 @@ export const QuizSettingsSchema = z.object({
   randomizeQuestions: z.boolean().optional(),
   timeLimit: z.number().min(0).optional(),
   requireEmail: z.boolean().optional(),
-  requireName: z.boolean().optional(),
-  requirePhone: z.boolean().optional(),
   collectLeads: z.boolean().optional(),
   redirectUrl: z.string().url().optional(),
   thankYouMessage: z.string().optional(),
-  socialSharing: z.boolean().optional(),
-  analytics: z.object({
-    enabled: z.boolean().optional(),
-    trackingId: z.string().optional()
-  }).optional()
-}).optional();
+  autoSubmit: z.boolean().optional()
+}).catchall(z.unknown());
 
 // Quiz validation schema (atualizado)
 export const QuizSchema = z.object({
