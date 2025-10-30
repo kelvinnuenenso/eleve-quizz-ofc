@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { localDB } from '@/lib/localStorage';
 import { Lead, Quiz, Result } from '@/types/quiz';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   Users, 
   Download, 
@@ -46,44 +48,100 @@ const LeadsManager = ({ quizId }: LeadsManagerProps) => {
   const [filterDate, setFilterDate] = useState<string>('all');
   const [selectedLead, setSelectedLead] = useState<LeadWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     loadLeads();
-  }, [quizId]);
+  }, [quizId, user]);
 
   useEffect(() => {
     applyFilters();
   }, [leads, searchTerm, filterQuiz, filterDate]);
 
-  const loadLeads = () => {
-    setLoading(true);
-    try {
-      const allLeads = quizId ? localDB.getQuizLeads(quizId) : localDB.getAllLeads();
-      const allQuizzes = localDB.getAllQuizzes();
-      const allResults = quizId ? localDB.getQuizResults(quizId) : [];
+  const loadLeads = async () => {
+    if (!user) {
+      setError('Usuário não autenticado');
+      setLoading(false);
+      return;
+    }
 
-      const leadsWithDetails: LeadWithDetails[] = allLeads.map(lead => {
-        const quiz = allQuizzes.find(q => q.id === lead.quizId);
-        const result = allResults.find(r => r.id === lead.resultId);
-        
-        return {
-          ...lead,
-          quiz: quiz!,
-          result: result!,
-          score: result?.score,
-          outcomeKey: result?.outcomeKey
-        };
-      }).filter(lead => lead.quiz); // Only include leads with valid quiz
+    setLoading(true);
+    setError(null);
+    
+    try {
+      let query = supabase
+        .from('quiz_leads')
+        .select(`
+          *,
+          quizzes (*),
+          quiz_results (*)
+        `)
+        .eq('user_id', user.id);
+
+      // Filter by quiz if specified
+      if (quizId) {
+        query = query.eq('quiz_id', quizId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (!data) {
+        setLeads([]);
+        setLoading(false);
+        return;
+      }
+
+      // Transform data to match expected format
+      const leadsWithDetails: LeadWithDetails[] = data.map((lead: any) => ({
+        id: lead.id,
+        quizId: lead.quiz_id,
+        resultId: lead.result_id,
+        name: lead.name,
+        email: lead.email,
+        phone: lead.phone,
+        tags: lead.tags || [],
+        customFields: lead.custom_fields || {},
+        createdAt: lead.created_at,
+        quiz: lead.quizzes,
+        result: lead.quiz_results,
+        score: lead.quiz_results?.score,
+        outcomeKey: lead.quiz_results?.outcome_key
+      })).filter((lead: any) => lead.quiz); // Only include leads with valid quiz
 
       setLeads(leadsWithDetails);
-    } catch (error) {
-      console.error('Error loading leads:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar os leads.',
-        variant: 'destructive'
-      });
+    } catch (err) {
+      console.error('Error loading leads:', err);
+      setError('Falha ao carregar leads');
+      // Fallback to local data in case of error
+      try {
+        const allLeads = quizId ? localDB.getQuizLeads(quizId) : localDB.getAllLeads();
+        const allQuizzes = localDB.getAllQuizzes();
+        const allResults = quizId ? localDB.getQuizResults(quizId) : [];
+
+        const leadsWithDetails: LeadWithDetails[] = allLeads.map(lead => {
+          const quiz = allQuizzes.find(q => q.id === lead.quizId);
+          const result = allResults.find(r => r.id === lead.resultId);
+          
+          return {
+            ...lead,
+            quiz: quiz!,
+            result: result!,
+            score: result?.score,
+            outcomeKey: result?.outcomeKey
+          };
+        }).filter(lead => lead.quiz); // Only include leads with valid quiz
+
+        setLeads(leadsWithDetails);
+      } catch (localError) {
+        console.error('Error loading local leads:', localError);
+        setLeads([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -95,10 +153,10 @@ const LeadsManager = ({ quizId }: LeadsManagerProps) => {
     // Search filter
     if (searchTerm) {
       filtered = filtered.filter(lead => 
-        lead.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.quiz.name.toLowerCase().includes(searchTerm.toLowerCase())
+        (lead.name && lead.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (lead.email && lead.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (lead.phone && lead.phone.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (lead.quiz && lead.quiz.name.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
 
@@ -139,7 +197,7 @@ const LeadsManager = ({ quizId }: LeadsManagerProps) => {
         lead.name || '',
         lead.email || '',
         lead.phone || '',
-        lead.quiz.name,
+        lead.quiz?.name || '',
         lead.score?.toString() || '',
         lead.outcomeKey || '',
         new Date(lead.createdAt).toLocaleDateString('pt-BR')
@@ -167,10 +225,18 @@ const LeadsManager = ({ quizId }: LeadsManagerProps) => {
   };
 
   const getAvailableQuizzes = () => {
-    const quizzes = localDB.getAllQuizzes();
-    return quizzes.filter(quiz => 
-      leads.some(lead => lead.quizId === quiz.id)
-    );
+    // Extract unique quizzes from leads
+    const uniqueQuizzes: Quiz[] = [];
+    const quizIds = new Set<string>();
+    
+    leads.forEach(lead => {
+      if (lead.quiz && !quizIds.has(lead.quiz.id)) {
+        uniqueQuizzes.push(lead.quiz);
+        quizIds.add(lead.quiz.id);
+      }
+    });
+    
+    return uniqueQuizzes;
   };
 
   const generateWhatsAppLink = (lead: LeadWithDetails) => {
@@ -178,7 +244,7 @@ const LeadsManager = ({ quizId }: LeadsManagerProps) => {
     
     const phone = lead.phone.replace(/\D/g, '');
     const message = encodeURIComponent(
-      `Olá ${lead.name || 'usuário'}! Vi que você participou do nosso quiz "${lead.quiz.name}" e gostaria de conversar com você sobre os resultados.`
+      `Olá ${lead.name || 'usuário'}! Vi que você participou do nosso quiz "${lead.quiz?.name}" e gostaria de conversar com você sobre os resultados.`
     );
     
     return `https://wa.me/55${phone}?text=${message}`;
@@ -190,6 +256,21 @@ const LeadsManager = ({ quizId }: LeadsManagerProps) => {
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-muted-foreground">Carregando leads...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <Users className="w-12 h-12 mx-auto" />
+          </div>
+          <h3 className="text-lg font-semibold mb-2">Erro ao carregar leads</h3>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={loadLeads}>Tentar novamente</Button>
         </div>
       </div>
     );
@@ -366,7 +447,7 @@ const LeadsManager = ({ quizId }: LeadsManagerProps) => {
                         </div>
                       </td>
                       <td className="p-3">
-                        <Badge variant="outline">{lead.quiz.name}</Badge>
+                        <Badge variant="outline">{lead.quiz?.name || 'Quiz não encontrado'}</Badge>
                       </td>
                       <td className="p-3">
                         <Badge variant="secondary">
@@ -425,7 +506,7 @@ const LeadsManager = ({ quizId }: LeadsManagerProps) => {
                                   
                                   <div>
                                     <Label>Quiz</Label>
-                                    <p className="mt-1">{selectedLead.quiz.name}</p>
+                                    <p className="mt-1">{selectedLead.quiz?.name || 'Quiz não encontrado'}</p>
                                   </div>
                                   
                                   <div className="grid md:grid-cols-2 gap-4">

@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { getResult } from '@/lib/quizzes';
 import { loadQuiz } from '@/lib/quizzes';
 import { Result, Quiz, QuizOutcome } from '@/types/quiz';
-import { Trophy, Star, Target, Zap, Heart, Award, ExternalLink, Share2, Download } from 'lucide-react';
+import { Trophy, Star, Target, Zap, Heart, Award, ExternalLink, Share2, Download, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const outcomeIcons = {
@@ -210,6 +210,56 @@ const ResultPage = () => {
                     {outcome.cta.label}
                     <ExternalLink className="w-4 h-4" />
                   </a>
+                </Button>
+              )}
+
+              {/* WhatsApp Redirect Button */}
+              {quiz?.redirectSettings?.enabled && quiz?.redirectSettings?.redirect_type === 'whatsapp' && quiz?.redirectSettings?.url && (
+                <Button 
+                  size="lg" 
+                  className="w-full mb-6"
+                  style={{ 
+                    backgroundColor: '#25D366',
+                    borderColor: '#25D366'
+                  }}
+                  onClick={() => {
+                    console.log("Redirecionando para WhatsApp:", quiz.redirectSettings!.url!);
+                    // For local development, we'll use window.location.href to avoid opening new tabs
+                    // In production, we can use window.open if needed
+                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                      window.location.href = quiz.redirectSettings!.url!;
+                    } else {
+                      window.open(quiz.redirectSettings!.url!, '_blank');
+                    }
+                  }}
+                >
+                  <MessageCircle className="w-5 h-5 mr-2" />
+                  Falar no WhatsApp
+                </Button>
+              )}
+
+              {/* Standard Redirect Button */}
+              {quiz?.redirectSettings?.enabled && quiz?.redirectSettings?.redirect_type !== 'whatsapp' && quiz?.redirectSettings?.url && (
+                <Button 
+                  size="lg" 
+                  className="w-full mb-6"
+                  style={{ 
+                    backgroundColor: '#3B82F6',
+                    borderColor: '#3B82F6'
+                  }}
+                  onClick={() => {
+                    console.log("Redirecionando para URL:", quiz.redirectSettings!.url!);
+                    // For local development, we'll use window.location.href to avoid opening new tabs
+                    // In production, we can use window.open if needed
+                    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                      window.location.href = quiz.redirectSettings!.url!;
+                    } else {
+                      window.open(quiz.redirectSettings!.url!, '_blank');
+                    }
+                  }}
+                >
+                  <ExternalLink className="w-4 h-4 mr-2" />
+                  Continuar
                 </Button>
               )}
 

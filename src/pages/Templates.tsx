@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import ExpandedTemplates from '@/components/quiz/ExpandedTemplates';
 import { Quiz, Question } from '@/types/quiz';
 import { saveQuiz } from '@/lib/quizzes';
+import { generateUniquePublicId } from '@/lib/supabaseQuiz';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft } from 'lucide-react';
 
@@ -30,7 +31,7 @@ const Templates = () => {
     try {
       const newQuiz: Quiz = {
         id: crypto.randomUUID(),
-        publicId: Math.random().toString(36).slice(2, 8),
+        publicId: await generateUniquePublicId(template.name),
         name: template.name,
         description: template.description,
         status: 'draft',

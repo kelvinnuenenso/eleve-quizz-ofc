@@ -50,25 +50,83 @@ function ComponentIcon({ type }: { type: Component['type'] }) {
   }
 }
 
-function ComponentPreview({ component }: { component: Component }) {
+interface ComponentPreviewProps {
+  component: Component;
+  onUpdate?: (updates: Partial<Component>) => void;
+  isSelected?: boolean;
+  handleTextChange?: (field: string, value: string) => void;
+  handleKeyDown?: (e: React.KeyboardEvent, field: string) => void;
+}
+
+function ComponentPreview({ 
+  component, 
+  onUpdate,
+  isSelected
+}: ComponentPreviewProps) {
   const { type, content } = component;
+
+  // Handle content editable changes
+  const handleContentEditableChange = (field: string) => (e: React.FocusEvent<HTMLElement>) => {
+    const value = e.target.textContent || '';
+    if (onUpdate) {
+      onUpdate({
+        content: {
+          ...component.content,
+          [field]: value
+        }
+      });
+    }
+  };
+
+  // Handle key events for inline editing
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const element = e.target as HTMLElement;
+      element.blur();
+    }
+  };
 
   switch (type) {
     case 'title':
       return (
         <div className="py-2">
-          <h2 className="text-2xl font-bold text-foreground">
-            {content?.text || 'Título'}
-          </h2>
+          {isSelected ? (
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={handleContentEditableChange('text')}
+              onKeyDown={handleKeyDown}
+              className="text-2xl font-bold text-foreground outline-none border-b border-transparent hover:border-muted-foreground focus:border-primary focus:bg-white/50 rounded px-1"
+            >
+              {content?.text || 'Título'}
+            </div>
+          ) : (
+            <h2 className="text-2xl font-bold text-foreground">
+              {content?.text || 'Título'}
+            </h2>
+          )}
         </div>
       );
 
     case 'text':
       return (
         <div className="py-2">
-          <p className="text-foreground">
-            {content?.text || 'Texto do parágrafo...'}
-          </p>
+          {isSelected ? (
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={handleContentEditableChange('text')}
+              onKeyDown={handleKeyDown}
+              className="text-foreground outline-none border-b border-transparent hover:border-muted-foreground focus:border-primary focus:bg-white/50 rounded px-1"
+            >
+              {content?.text || 'Texto do parágrafo...'}
+            </div>
+          ) : (
+            <p className="text-foreground">
+              {content?.text || 'Texto do parágrafo...'}
+            </p>
+          )}
         </div>
       );
 
@@ -116,21 +174,50 @@ function ComponentPreview({ component }: { component: Component }) {
     case 'button':
       return (
         <div className="py-2">
-          <Button 
-            variant={content?.style === 'secondary' ? 'secondary' : 'default'}
-            className="w-full"
-          >
-            {content?.text || 'Clique aqui'}
-          </Button>
+          {isSelected ? (
+            <Button 
+              variant={content?.style === 'secondary' ? 'secondary' : 'default'}
+              className="w-full"
+            >
+              <div
+                contentEditable
+                suppressContentEditableWarning
+                onBlur={handleContentEditableChange('text')}
+                onKeyDown={handleKeyDown}
+                className="outline-none border-b border-transparent hover:border-muted-foreground focus:border-primary focus:bg-white/50 rounded px-1"
+              >
+                {content?.text || 'Clique aqui'}
+              </div>
+            </Button>
+          ) : (
+            <Button 
+              variant={content?.style === 'secondary' ? 'secondary' : 'default'}
+              className="w-full"
+            >
+              {content?.text || 'Clique aqui'}
+            </Button>
+          )}
         </div>
       );
 
     case 'input':
       return (
         <div className="py-2 space-y-2">
-          <label className="text-sm font-medium">
-            {content?.label || 'Sua resposta'}
-          </label>
+          {isSelected ? (
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={handleContentEditableChange('label')}
+              onKeyDown={handleKeyDown}
+              className="text-sm font-medium outline-none border-b border-transparent hover:border-muted-foreground focus:border-primary focus:bg-white/50 rounded px-1"
+            >
+              {content?.label || 'Sua resposta'}
+            </div>
+          ) : (
+            <label className="text-sm font-medium">
+              {content?.label || 'Sua resposta'}
+            </label>
+          )}
           <Input 
             placeholder="Digite sua resposta..."
             disabled
@@ -141,9 +228,21 @@ function ComponentPreview({ component }: { component: Component }) {
     case 'multiple_choice':
       return (
         <div className="py-2 space-y-3">
-          <h3 className="font-medium">
-            {content?.question || 'Qual sua preferência?'}
-          </h3>
+          {isSelected ? (
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={handleContentEditableChange('question')}
+              onKeyDown={handleKeyDown}
+              className="font-medium outline-none border-b border-transparent hover:border-muted-foreground focus:border-primary focus:bg-white/50 rounded px-1"
+            >
+              {content?.question || 'Qual sua preferência?'}
+            </div>
+          ) : (
+            <h3 className="font-medium">
+              {content?.question || 'Qual sua preferência?'}
+            </h3>
+          )}
           {content?.description && (
             <p className="text-sm text-muted-foreground">
               {content.description}
@@ -220,9 +319,21 @@ function ComponentPreview({ component }: { component: Component }) {
     case 'level_slider':
       return (
         <div className="py-2 space-y-3">
-          <h3 className="font-medium">
-            {content?.question || content?.label || 'Avalie de 1 a 10'}
-          </h3>
+          {isSelected ? (
+            <div
+              contentEditable
+              suppressContentEditableWarning
+              onBlur={handleContentEditableChange('label')}
+              onKeyDown={handleKeyDown}
+              className="font-medium outline-none border-b border-transparent hover:border-muted-foreground focus:border-primary focus:bg-white/50 rounded px-1"
+            >
+              {content?.question || content?.label || 'Avalie de 1 a 10'}
+            </div>
+          ) : (
+            <h3 className="font-medium">
+              {content?.question || content?.label || 'Avalie de 1 a 10'}
+            </h3>
+          )}
           {content?.description && (
             <p className="text-sm text-muted-foreground">
               {content.description}
@@ -274,12 +385,37 @@ function ComponentPreview({ component }: { component: Component }) {
                 </div>
               )}
               <div className="flex-1">
-                <blockquote className="text-sm italic">
-                  "{content?.quote || 'Excelente produto!'}"
-                </blockquote>
-                <cite className="text-xs text-muted-foreground mt-1 block">
-                  — {content?.author || 'Cliente satisfeito'}
-                </cite>
+                {isSelected ? (
+                  <>
+                    <blockquote
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={handleContentEditableChange('quote')}
+                      onKeyDown={handleKeyDown}
+                      className="text-sm italic outline-none border-b border-transparent hover:border-muted-foreground focus:border-primary focus:bg-white/50 rounded px-1"
+                    >
+                      "{content?.quote || 'Excelente produto!'}"
+                    </blockquote>
+                    <cite
+                      contentEditable
+                      suppressContentEditableWarning
+                      onBlur={handleContentEditableChange('author')}
+                      onKeyDown={handleKeyDown}
+                      className="text-xs text-muted-foreground mt-1 block outline-none border-b border-transparent hover:border-muted-foreground focus:border-primary focus:bg-white/50 rounded px-1"
+                    >
+                      — {content?.author || 'Cliente satisfeito'}
+                    </cite>
+                  </>
+                ) : (
+                  <>
+                    <blockquote className="text-sm italic">
+                      "{content?.quote || 'Excelente produto!'}"
+                    </blockquote>
+                    <cite className="text-xs text-muted-foreground mt-1 block">
+                      — {content?.author || 'Cliente satisfeito'}
+                    </cite>
+                  </>
+                )}
               </div>
             </div>
           </Card>
@@ -345,7 +481,7 @@ export function ComponentRenderer({
       <div
         className={`relative border-2 rounded-lg transition-all cursor-pointer ${
           isSelected 
-            ? 'border-primary bg-primary/5 shadow-sm' 
+            ? 'border-primary bg-primary/5 shadow-sm ring-2 ring-primary/20' 
             : 'border-transparent hover:border-muted-foreground/20 hover:bg-muted/20'
         }`}
         onClick={onSelect}
@@ -376,9 +512,15 @@ export function ComponentRenderer({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDelete();
+                  if (onDelete) {
+                    // Show confirmation dialog before deleting
+                    if (confirm(`Tem certeza que deseja excluir este componente ${component.type.replace('_', ' ')}?`)) {
+                      onDelete();
+                    }
+                  }
                 }}
                 className="hover:bg-destructive/20 p-1 rounded text-destructive-foreground transition-all"
+                title="Excluir componente"
               >
                 <Trash2 className="w-3 h-3" />
               </button>
@@ -402,12 +544,21 @@ export function ComponentRenderer({
 
         {/* Component Content */}
         <div className={`p-4 transition-all ${isDragging ? 'scale-95' : ''}`}>
-          <ComponentPreview component={component} />
+          <ComponentPreview 
+            component={component} 
+            onUpdate={onUpdate}
+            isSelected={isSelected}
+          />
         </div>
         
         {/* Indicador visual durante drag */}
         {isDragging && (
           <div className="absolute inset-0 bg-primary/10 rounded-lg border-2 border-primary border-dashed" />
+        )}
+        
+        {/* Overlay de seleção */}
+        {isSelected && !isDragging && (
+          <div className="absolute inset-0 rounded-lg border-2 border-primary pointer-events-none" />
         )}
       </div>
     </div>

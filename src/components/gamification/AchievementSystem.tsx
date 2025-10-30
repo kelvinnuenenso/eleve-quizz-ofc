@@ -285,20 +285,20 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
 
       {/* User Level Card */}
       {userLevel && (
-        <Card className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+        <Card className="bg-gradient-to-r from-purple-500 to-pink-500 text-white dark:from-purple-700 dark:to-pink-700">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center dark:bg-opacity-30">
                   <Crown className="w-8 h-8" />
                 </div>
                 <div>
                   <h4 className="text-2xl font-bold">Nível {userLevel.currentLevel}</h4>
-                  <p className="text-purple-100">{userLevel.levelName}</p>
+                  <p className="text-purple-100 dark:text-purple-200">{userLevel.levelName}</p>
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-sm text-purple-100">XP Total</div>
+                <div className="text-sm text-purple-100 dark:text-purple-200">XP Total</div>
                 <div className="text-2xl font-bold">{userLevel.totalXP.toLocaleString()}</div>
               </div>
             </div>
@@ -311,11 +311,11 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
               </div>
               <Progress 
                 value={(userLevel.currentXP / 1000) * 100} 
-                className="h-2 bg-white bg-opacity-20"
+                className="h-2 bg-white bg-opacity-20 dark:bg-opacity-30"
               />
               <div className="flex flex-wrap gap-2">
                 {userLevel.perks.map((perk, index) => (
-                  <Badge key={index} variant="secondary" className="bg-white bg-opacity-20 text-white">
+                  <Badge key={index} variant="secondary" className="bg-white bg-opacity-20 text-white dark:bg-opacity-30">
                     {perk}
                   </Badge>
                 ))}
@@ -327,13 +327,13 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
 
       {/* Stats Cards */}
       <div className="grid md:grid-cols-3 gap-4">
-        <Card>
+        <Card className="bg-background dark:bg-gray-800">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Conquistas Desbloqueadas
               </CardTitle>
-              <Trophy className="w-4 h-4 text-yellow-600" />
+              <Trophy className="w-4 h-4 text-yellow-600 dark:text-yellow-500" />
             </div>
           </CardHeader>
           <CardContent>
@@ -346,13 +346,13 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-background dark:bg-gray-800">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Pontos Totais
               </CardTitle>
-              <Star className="w-4 h-4 text-purple-600" />
+              <Star className="w-4 h-4 text-purple-600 dark:text-purple-500" />
             </div>
           </CardHeader>
           <CardContent>
@@ -363,13 +363,13 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-background dark:bg-gray-800">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Próxima Conquista
               </CardTitle>
-              <Target className="w-4 h-4 text-green-600" />
+              <Target className="w-4 h-4 text-green-600 dark:text-green-500" />
             </div>
           </CardHeader>
           <CardContent>
@@ -397,10 +397,10 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
       </div>
 
       <Tabs defaultValue="achievements" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="achievements">Conquistas</TabsTrigger>
-          <TabsTrigger value="progress">Progresso</TabsTrigger>
-          <TabsTrigger value="rewards">Recompensas</TabsTrigger>
+        <TabsList className="bg-muted dark:bg-gray-800">
+          <TabsTrigger value="achievements" className="dark:text-gray-200">Conquistas</TabsTrigger>
+          <TabsTrigger value="progress" className="dark:text-gray-200">Progresso</TabsTrigger>
+          <TabsTrigger value="rewards" className="dark:text-gray-200">Recompensas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="achievements" className="space-y-4">
@@ -409,6 +409,7 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
             <Button 
               variant={filter === 'all' ? 'default' : 'outline'} 
               size="sm"
+              className="dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
               onClick={() => setFilter('all')}
             >
               Todas
@@ -416,6 +417,7 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
             <Button 
               variant={filter === 'unlocked' ? 'default' : 'outline'} 
               size="sm"
+              className="dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
               onClick={() => setFilter('unlocked')}
             >
               Desbloqueadas
@@ -423,16 +425,18 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
             <Button 
               variant={filter === 'locked' ? 'default' : 'outline'} 
               size="sm"
+              className="dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
               onClick={() => setFilter('locked')}
             >
               Bloqueadas
             </Button>
             
-            <div className="h-4 w-px bg-border mx-2" />
+            <div className="h-4 w-px bg-border mx-2 dark:bg-gray-700" />
             
             <Button 
               variant={category === 'all' ? 'default' : 'outline'} 
               size="sm"
+              className="dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
               onClick={() => setCategory('all')}
             >
               Todas Categorias
@@ -440,6 +444,7 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
             <Button 
               variant={category === 'completion' ? 'default' : 'outline'} 
               size="sm"
+              className="dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
               onClick={() => setCategory('completion')}
             >
               Conclusão
@@ -447,6 +452,7 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
             <Button 
               variant={category === 'engagement' ? 'default' : 'outline'} 
               size="sm"
+              className="dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
               onClick={() => setCategory('engagement')}
             >
               Engajamento  
@@ -454,6 +460,7 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
             <Button 
               variant={category === 'social' ? 'default' : 'outline'} 
               size="sm"
+              className="dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700"
               onClick={() => setCategory('social')}
             >
               Social
@@ -465,10 +472,10 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
             {filteredAchievements.map((achievement) => (
               <Card 
                 key={achievement.id}
-                className={`relative transition-all duration-200 hover:scale-105 ${
+                className={`relative transition-all duration-200 hover:scale-105 dark:bg-gray-800 ${
                   achievement.isUnlocked 
-                    ? 'border-green-200 bg-green-50' 
-                    : 'border-gray-200 opacity-75'
+                    ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-900/20' 
+                    : 'border-gray-200 opacity-75 dark:border-gray-700 dark:bg-gray-900/50'
                 }`}
               >
                 <CardHeader className="pb-2">
@@ -476,16 +483,16 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
                     <div className="flex items-center gap-2">
                       <div className="text-2xl">{achievement.icon}</div>
                       <div>
-                        <CardTitle className="text-lg">{achievement.title}</CardTitle>
-                        <p className="text-sm text-muted-foreground">
+                        <CardTitle className="text-lg dark:text-gray-100">{achievement.title}</CardTitle>
+                        <p className="text-sm text-muted-foreground dark:text-gray-400">
                           {achievement.description}
                         </p>
                       </div>
                     </div>
                     {achievement.isUnlocked ? (
-                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-500" />
                     ) : (
-                      <Lock className="w-5 h-5 text-gray-400" />
+                      <Lock className="w-5 h-5 text-gray-400 dark:text-gray-500" />
                     )}
                   </div>
                 </CardHeader>
@@ -500,7 +507,7 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
                         </div>
                         <Progress 
                           value={(achievement.progress / achievement.maxProgress) * 100} 
-                          className="h-2"
+                          className="h-2 dark:bg-gray-700"
                         />
                       </div>
                     )}
@@ -508,16 +515,16 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
                     {/* Badges */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={getRarityColor(achievement.rarity)}>
+                        <Badge variant="outline" className={`${getRarityColor(achievement.rarity)} dark:bg-gray-900/50`}>
                           {getRarityIcon(achievement.rarity)}
                           {achievement.rarity}
                         </Badge>
-                        <Badge variant="outline">
+                        <Badge variant="outline" className="dark:bg-gray-900/50">
                           {getCategoryIcon(achievement.category)}
                           {achievement.category}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-1 text-sm font-medium text-purple-600">
+                      <div className="flex items-center gap-1 text-sm font-medium text-purple-600 dark:text-purple-400">
                         <Star className="w-4 h-4" />
                         {achievement.points} XP
                       </div>
@@ -525,7 +532,7 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
 
                     {/* Unlock Date */}
                     {achievement.unlockedAt && (
-                      <div className="text-xs text-muted-foreground flex items-center gap-1">
+                      <div className="text-xs text-muted-foreground flex items-center gap-1 dark:text-gray-400">
                         <Clock className="w-3 h-3" />
                         Desbloqueada em {new Date(achievement.unlockedAt).toLocaleDateString('pt-BR')}
                       </div>
@@ -538,20 +545,20 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
         </TabsContent>
 
         <TabsContent value="progress" className="space-y-4">
-          <Card>
+          <Card className="dark:bg-gray-800">
             <CardHeader>
-              <CardTitle>Conquistas em Progresso</CardTitle>
+              <CardTitle className="dark:text-gray-100">Conquistas em Progresso</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {achievements
                   .filter(a => !a.isUnlocked && a.progress > 0)
                   .map((achievement) => (
-                    <div key={achievement.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                    <div key={achievement.id} className="flex items-center gap-4 p-4 border rounded-lg dark:border-gray-700 dark:bg-gray-900/50">
                       <div className="text-2xl">{achievement.icon}</div>
                       <div className="flex-1">
-                        <h4 className="font-medium">{achievement.title}</h4>
-                        <p className="text-sm text-muted-foreground">{achievement.description}</p>
+                        <h4 className="font-medium dark:text-gray-100">{achievement.title}</h4>
+                        <p className="text-sm text-muted-foreground dark:text-gray-400">{achievement.description}</p>
                         <div className="mt-2 space-y-1">
                           <div className="flex justify-between text-sm">
                             <span>Progresso</span>
@@ -559,13 +566,13 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
                           </div>
                           <Progress 
                             value={(achievement.progress / achievement.maxProgress) * 100} 
-                            className="h-2"
+                            className="h-2 dark:bg-gray-700"
                           />
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-muted-foreground">Recompensa</div>
-                        <div className="font-medium text-purple-600">{achievement.points} XP</div>
+                        <div className="text-sm text-muted-foreground dark:text-gray-400">Recompensa</div>
+                        <div className="font-medium text-purple-600 dark:text-purple-400">{achievement.points} XP</div>
                       </div>
                     </div>
                   ))}
@@ -576,9 +583,9 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
 
         <TabsContent value="rewards" className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
-            <Card>
+            <Card className="dark:bg-gray-800">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 dark:text-gray-100">
                   <Gift className="w-5 h-5" />
                   Recompensas por Nível
                 </CardTitle>
@@ -595,20 +602,22 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
                     <div 
                       key={index} 
                       className={`flex items-center justify-between p-3 rounded-lg border ${
-                        item.unlocked ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                        item.unlocked 
+                          ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800' 
+                          : 'bg-gray-50 border-gray-200 dark:bg-gray-900/50 dark:border-gray-700'
                       }`}
                     >
                       <div className="flex items-center gap-2">
                         {item.unlocked ? (
-                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-500" />
                         ) : (
-                          <Lock className="w-4 h-4 text-gray-400" />
+                          <Lock className="w-4 h-4 text-gray-400 dark:text-gray-500" />
                         )}
-                        <span className={item.unlocked ? 'text-green-800' : 'text-gray-600'}>
+                        <span className={item.unlocked ? 'text-green-800 dark:text-green-300' : 'text-gray-600 dark:text-gray-300'}>
                           {item.reward}
                         </span>
                       </div>
-                      <Badge variant={item.unlocked ? 'default' : 'secondary'}>
+                      <Badge variant={item.unlocked ? 'default' : 'secondary'} className="dark:bg-gray-700">
                         Nível {item.level}
                       </Badge>
                     </div>
@@ -617,9 +626,9 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="dark:bg-gray-800">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 dark:text-gray-100">
                   <Trophy className="w-5 h-5" />
                   Conquistas Raras
                 </CardTitle>
@@ -633,20 +642,20 @@ export const AchievementSystem = ({ userId, onAchievementUnlocked }: Achievement
                         key={achievement.id}
                         className={`flex items-center gap-3 p-3 rounded-lg border ${
                           achievement.isUnlocked 
-                            ? 'bg-purple-50 border-purple-200' 
-                            : 'bg-gray-50 border-gray-200'
+                            ? 'bg-purple-50 border-purple-200 dark:bg-purple-900/20 dark:border-purple-800' 
+                            : 'bg-gray-50 border-gray-200 dark:bg-gray-900/50 dark:border-gray-700'
                         }`}
                       >
                         <div className="text-xl">{achievement.icon}</div>
                         <div className="flex-1">
-                          <h4 className="font-medium">{achievement.title}</h4>
-                          <p className="text-sm text-muted-foreground">{achievement.description}</p>
+                          <h4 className="font-medium dark:text-gray-100">{achievement.title}</h4>
+                          <p className="text-sm text-muted-foreground dark:text-gray-400">{achievement.description}</p>
                         </div>
                         <div className="text-right">
-                          <Badge className={getRarityColor(achievement.rarity)}>
+                          <Badge className={`${getRarityColor(achievement.rarity)} dark:bg-gray-900/50`}>
                             {achievement.rarity}
                           </Badge>
-                          <div className="text-sm font-medium text-purple-600 mt-1">
+                          <div className="text-sm font-medium text-purple-600 mt-1 dark:text-purple-400">
                             {achievement.points} XP
                           </div>
                         </div>

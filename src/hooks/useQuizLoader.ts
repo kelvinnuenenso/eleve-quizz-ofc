@@ -30,6 +30,7 @@ export function useQuizLoader(quiz: Quiz, config: QuizLoaderConfig = defaultConf
       // 1. ETAPA DE INTRODUÇÃO (sempre primeira)
       steps.push({
         id: 'step-intro',
+        type: 'question',
         name: 'Introdução',
         title: quiz.name || 'Bem-vindo ao Quiz',
         components: [
@@ -39,6 +40,12 @@ export function useQuizLoader(quiz: Quiz, config: QuizLoaderConfig = defaultConf
             content: {
               text: quiz.name || 'Bem-vindo ao Quiz',
               level: 'h1'
+            },
+            style: {
+              textAlign: 'center',
+              fontSize: '2.5rem',
+              fontWeight: 'bold',
+              marginBottom: '1rem'
             }
           },
           {
@@ -47,6 +54,11 @@ export function useQuizLoader(quiz: Quiz, config: QuizLoaderConfig = defaultConf
             content: {
               text: quiz.description || `Responda ${quiz.questions.length} perguntas e descubra seu resultado personalizado.`,
               style: 'subtitle'
+            },
+            style: {
+              textAlign: 'center',
+              fontSize: '1.25rem',
+              marginBottom: '2rem'
             }
           },
           {
@@ -56,6 +68,9 @@ export function useQuizLoader(quiz: Quiz, config: QuizLoaderConfig = defaultConf
               text: 'Começar',
               variant: 'primary',
               action: 'next'
+            },
+            style: {
+              marginTop: '1rem'
             }
           }
         ]
@@ -65,6 +80,7 @@ export function useQuizLoader(quiz: Quiz, config: QuizLoaderConfig = defaultConf
       quiz.questions.forEach((question, index) => {
         const step: QuizStep = {
           id: `step-${question.id}`,
+          type: 'question',
           name: `Pergunta ${index + 1}`,
           title: question.title,
           components: [
@@ -131,6 +147,7 @@ export function useQuizLoader(quiz: Quiz, config: QuizLoaderConfig = defaultConf
       // 3. ETAPA DE RESULTADO (sempre última)
       steps.push({
         id: 'step-result',
+        type: 'result',
         name: 'Resultado',
         title: 'Seu Resultado',
         components: [
@@ -184,6 +201,7 @@ export function useQuizLoader(quiz: Quiz, config: QuizLoaderConfig = defaultConf
     console.log('🆕 Criando etapa inicial básica');
     steps.push({
       id: 'step-initial',
+      type: 'question',
       name: 'Página Principal',
       title: quiz.name || 'Nova Página',
       components: [
@@ -279,7 +297,7 @@ export function useQuizLoader(quiz: Quiz, config: QuizLoaderConfig = defaultConf
   const autoLoadQuizContent = (quiz: Quiz): Quiz => {
     setIsLoading(true);
 
-    let updatedQuiz = { ...quiz };
+    const updatedQuiz = { ...quiz };
 
     // 1. Aplicar tema automaticamente
     if (config.autoApplyTheme) {

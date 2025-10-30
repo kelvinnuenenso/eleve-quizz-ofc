@@ -49,9 +49,24 @@ class RealPixelSystem {
     this.pixelSettings = settings;
     this.utmParams = utmParams;
     
-    // Initialize Facebook Pixel
+    // Validate and initialize Facebook Pixel
     if (settings.facebook?.enabled && settings.facebook.pixelId) {
-      this.initializeFacebookPixel(settings.facebook.pixelId);
+      // Validate Facebook Pixel ID format
+      if (this.isValidPixelId(settings.facebook.pixelId)) {
+        this.initializeFacebookPixel(settings.facebook.pixelId);
+      } else {
+        console.warn('Invalid Facebook Pixel ID format:', settings.facebook.pixelId);
+      }
+    }
+    
+    // Inject custom pixel code
+    if (settings.custom?.enabled && settings.custom.code) {
+      this.injectCustomPixel(settings.custom.code);
+    }
+    
+    // Inject UTMify code
+    if (settings.utmify?.enabled && settings.utmify.code) {
+      this.injectCustomPixel(settings.utmify.code);
     }
 
     this.isInitialized = true;
@@ -100,6 +115,9 @@ class RealPixelSystem {
         content_ids: [quiz.id]
       });
     }
+    
+    // Fire custom events for quiz view
+    this.fireCustomEvents('quiz_start', quiz);
 
     console.log('Quiz view tracked:', quiz.name);
   }
@@ -107,12 +125,41 @@ class RealPixelSystem {
   // Track quiz start
   trackQuizStart(quiz: Quiz) {
     if (!this.isInitialized) return;
+    
+    // Facebook Pixel StartQuiz event
+    if (this.shouldTrackFacebookEvent('StartQuiz')) {
+      this.fireFacebookEvent('StartQuiz', {
+        content_name: quiz.name,
+        content_category: 'Quiz',
+        content_ids: [quiz.id]
+      });
+    }
+    
+    // Fire custom events for quiz start
+    this.fireCustomEvents('quiz_start', quiz);
+    
     console.log('Quiz start tracked:', quiz.name);
   }
 
   // Track question answer
   trackQuestionAnswer(quiz: Quiz, questionIndex: number, questionId: string, answer: any) {
     if (!this.isInitialized) return;
+    
+    // Facebook Pixel QuestionAnswered event
+    if (this.shouldTrackFacebookEvent('QuestionAnswered')) {
+      this.fireFacebookEvent('QuestionAnswered', {
+        content_name: quiz.name,
+        content_category: 'Quiz',
+        content_ids: [quiz.id],
+        question_index: questionIndex,
+        question_id: questionId,
+        answer: answer
+      });
+    }
+    
+    // Fire custom events for question answer
+    this.fireCustomEvents('question_answer', quiz, { questionIndex, questionId, answer });
+    
     console.log('Question answer tracked:', { questionIndex, questionId, answer });
   }
 
@@ -128,6 +175,9 @@ class RealPixelSystem {
         content_ids: [quiz.id]
       });
     }
+    
+    // Fire custom events for quiz completion
+    this.fireCustomEvents('quiz_complete', quiz, { result });
 
     console.log('Quiz completion tracked:', { quiz: quiz.name });
   }
@@ -144,6 +194,9 @@ class RealPixelSystem {
         content_ids: [quiz.id]
       });
     }
+    
+    // Fire custom events for lead capture
+    this.fireCustomEvents('quiz_complete', quiz, { lead });
 
     console.log('Lead capture tracked:', { quiz: quiz.name });
   }
@@ -151,6 +204,20 @@ class RealPixelSystem {
   // Track specific result
   trackSpecificResult(quiz: Quiz, result: any, outcomeKey: string) {
     if (!this.isInitialized) return;
+    
+    // Facebook Pixel SpecificResult event
+    if (this.shouldTrackFacebookEvent('SpecificResult')) {
+      this.fireFacebookEvent('SpecificResult', {
+        content_name: quiz.name,
+        content_category: 'Quiz',
+        content_ids: [quiz.id],
+        outcome_key: outcomeKey
+      });
+    }
+    
+    // Fire custom events for specific result
+    this.fireCustomEvents('result_specific', quiz, { result, outcomeKey });
+    
     console.log('Specific result tracked:', { quiz: quiz.name, outcomeKey });
   }
 
@@ -181,6 +248,7 @@ class RealPixelSystem {
     return !!(
       this.pixelSettings.facebook?.enabled &&
       this.pixelSettings.facebook?.pixelId &&
+      this.isValidPixelId(this.pixelSettings.facebook.pixelId) &&
       this.pixelSettings.facebook?.standardEvents?.enabled &&
       this.pixelSettings.facebook?.standardEvents?.events?.includes(eventName)
     );
@@ -195,6 +263,19 @@ class RealPixelSystem {
       if (value) utmParams[param] = value;
     });
     return utmParams;
+  }
+
+  // Inject custom pixel code
+  private injectCustomPixel(code: string) {
+    try {
+      // Create a script element and inject the code
+      const script = document.createElement('script');
+      script.innerHTML = code;
+      document.head.appendChild(script);
+      console.log('Custom pixel code injected');
+    } catch (error) {
+      console.error('Error injecting custom pixel code:', error);
+    }
   }
 
   // Persist UTM parameters in localStorage
@@ -215,6 +296,60 @@ class RealPixelSystem {
       console.error('Error getting persisted UTM parameters:', error);
       return {};
     }
+  }
+
+  // Validate Facebook Pixel ID format
+  private isValidPixelId(pixelId: string): boolean {
+    // Facebook Pixel IDs are typically numeric
+    return /^\d+$/.test(pixelId);
+  }
+
+  // Fire custom events based on trigger conditions
+  private fireCustomEvents(trigger: string, quiz: any, data?: any) {
+    if (!this.pixelSettings.facebook?.customMode?.enabled || !this.pixelSettings.facebook.customMode.events) {
+      return;
+    }
+
+    // Find events that match the trigger
+    const matchingEvents = this.pixelSettings.facebook.customMode.events.filter(event => event.trigger === trigger);
+    
+    matchingEvents.forEach(event => {
+      try {
+        // Validate event name
+        if (!event.name || event.name.trim() === '') {
+          console.warn('Skipping custom event with empty name');
+          return;
+        }
+        
+        // Check if trigger value matches (for question_answer and result_specific)
+        if (trigger === 'question_answer' && event.triggerValue) {
+          const questionIndex = data?.questionIndex;
+          if (questionIndex !== parseInt(event.triggerValue) - 1) return; // Convert to 0-based index
+        }
+        
+        if (trigger === 'result_specific' && event.triggerValue) {
+          const outcomeKey = data?.outcomeKey;
+          if (outcomeKey !== event.triggerValue) return;
+        }
+        
+        // Build parameters
+        const parameters: Record<string, any> = {};
+        event.parameters.forEach(param => {
+          // Validate parameter key and value
+          if (param.key && param.key.trim() !== '') {
+            parameters[param.key] = param.value;
+          }
+        });
+        
+        // Add UTM parameters
+        Object.assign(parameters, this.utmParams);
+        
+        // Fire the custom event
+        this.fireFacebookEvent(event.name, parameters);
+      } catch (error) {
+        console.error('Error firing custom event:', error);
+      }
+    });
   }
 }
 

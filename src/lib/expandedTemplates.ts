@@ -634,7 +634,14 @@ export const getPopularTemplates = () => {
 };
 
 export const getPremiumTemplates = () => {
+  // TEMPORARY: Make all premium templates available to all users
+  // This bypasses plan restrictions to make all premium templates accessible
+  return expandedTemplates;
+  
+  /*
+  // ORIGINAL CODE - commented out for reference
   return expandedTemplates.filter(t => t.isPremium);
+  */
 };
 
 export const searchTemplates = (query: string) => {

@@ -11,13 +11,11 @@ import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Slider } from '@/components/ui/slider';
 import { QuizTheme } from '@/types/quiz';
-import { Palette, Type, Layout, Image, Sparkles, Zap, Film, BarChart3, Save, Gift } from 'lucide-react';
+import { Palette, Type, Layout, Image, Sparkles, Zap, Film, BarChart3, Save, Gift, Gauge, Brain, TrendingUp, Volume2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { FakeProgressBar } from './FakeProgressBar';
 import { LivePreview } from './LivePreview';
-import { IntelligentProgressConfigComponent } from './IntelligentProgressConfig';
 import { useFakeProgress } from '@/hooks/useFakeProgress';
-import { MicroRewards } from './engagement/MicroRewards';
 
 interface ThemeEditorProps {
   theme: QuizTheme;
@@ -552,13 +550,13 @@ export function ThemeEditor({ theme, onUpdate, quizId }: ThemeEditorProps) {
         {/* Configurações */}
         <div>
           <Tabs defaultValue="presets" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-1">
+        <TabsList className="grid w-full grid-cols-3 md:grid-cols-6">
           <TabsTrigger value="presets" className="flex items-center gap-1 text-xs sm:text-sm">
-            <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">Presets</span>
+            <Palette className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Temas</span>
           </TabsTrigger>
           <TabsTrigger value="colors" className="flex items-center gap-1 text-xs sm:text-sm">
-            <Palette className="w-3 h-3 sm:w-4 sm:h-4" />
+            <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Cores</span>
           </TabsTrigger>
           <TabsTrigger value="typography" className="flex items-center gap-1 text-xs sm:text-sm">
@@ -891,9 +889,12 @@ export function ThemeEditor({ theme, onUpdate, quizId }: ThemeEditorProps) {
                           </div>
                         </div>
 
-                        {/* Preview por Etapa */}
-                        <div className="space-y-3">
-                          <Label className="text-sm font-medium">Preview por Etapa</Label>
+                        {/* Preview por Etapa - Enhanced UI */}
+                        <div className="space-y-4 pt-4 border-t">
+                          <div className="flex items-center gap-2">
+                            <Gauge className="w-4 h-4 text-primary" />
+                            <Label className="text-sm font-medium">Preview por Etapa</Label>
+                          </div>
                           <p className="text-xs text-muted-foreground">
                             Veja como a barra ficará após cada resposta
                           </p>
@@ -922,18 +923,30 @@ export function ThemeEditor({ theme, onUpdate, quizId }: ThemeEditorProps) {
                             })}
                           </div>
                         </div>
+
+                        {/* Enhanced Visual Preview - New Section */}
+                        <div className="space-y-4 pt-4 border-t">
+                          <div className="flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-primary" />
+                            <Label className="text-sm font-medium">Preview Visual Avançado</Label>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            Visualização em tempo real do estilo selecionado
+                          </p>
+                          <div className="p-4 bg-muted/20 rounded-lg">
+                            <FakeProgressBar
+                              theme={theme}
+                              currentStep={2}
+                              totalSteps={3}
+                              answeredSteps={1}
+                              isActive={true}
+                            />
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Progresso Inteligente */}
-                  <div className="space-y-4 pt-6 border-t">
-                    <IntelligentProgressConfigComponent
-                      theme={theme}
-                      onThemeChange={updateTheme}
-                      totalSteps={3}
-                    />
-                  </div>
                 </div>
               )}
             </div>
@@ -960,61 +973,120 @@ export function ThemeEditor({ theme, onUpdate, quizId }: ThemeEditorProps) {
         </TabsContent>
 
         <TabsContent value="effects" className="space-y-4">
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="useAnimations"
-                checked={theme.useParticleEffects || false}
-                onCheckedChange={(checked) => updateTheme({ useParticleEffects: checked })}
-              />
-              <Label htmlFor="useAnimations">Ativar efeitos especiais</Label>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="p-6">
+              <h4 className="font-medium mb-4 flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Efeitos Visuais
+              </h4>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium">Estilo de Confete</Label>
+                  <Select
+                    value={theme.confettiPreset || 'default'}
+                    onValueChange={(value) => updateTheme({ confettiPreset: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="default">Padrão</SelectItem>
+                      <SelectItem value="school-pride">Orgulho Escolar</SelectItem>
+                      <SelectItem value="celebration">Celebração</SelectItem>
+                      <SelectItem value="fireworks">Fogos de Artifício</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div>
-              <Label className="text-sm font-medium">Efeito de Conclusão</Label>
-              <Select
-                value={theme.completionEffect || 'confetti'}
-                onValueChange={(value) => updateTheme({ completionEffect: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="confetti">Confetti</SelectItem>
-                  <SelectItem value="fireworks">Fogos de Artifício</SelectItem>
-                  <SelectItem value="stars">Estrelas</SelectItem>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <div>
+                  <Label className="text-sm font-medium">Intensidade</Label>
+                  <Select
+                    value={theme.confettiIntensity || 'medium'}
+                    onValueChange={(value) => updateTheme({ confettiIntensity: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Baixa</SelectItem>
+                      <SelectItem value="medium">Média</SelectItem>
+                      <SelectItem value="high">Alta</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="useVideoBackground"
-                checked={theme.useVideoBackground || false}
-                onCheckedChange={(checked) => updateTheme({ useVideoBackground: checked })}
-              />
-              <Label htmlFor="useVideoBackground">Fundo de vídeo</Label>
-            </div>
+                <div>
+                  <Label className="text-sm font-medium">Duração (ms)</Label>
+                  <Input
+                    type="number"
+                    value={theme.confettiDuration || 3000}
+                    onChange={(e) => updateTheme({ confettiDuration: parseInt(e.target.value) || 3000 })}
+                    min="1000"
+                    max="10000"
+                  />
+                </div>
 
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="useSoundEffects"
-                checked={theme.useSoundEffects || false}
-                onCheckedChange={(checked) => updateTheme({ useSoundEffects: checked })}
-              />
-              <Label htmlFor="useSoundEffects">Efeitos sonoros</Label>
-            </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="confetti"
+                    checked={theme.useConfetti || false}
+                    onCheckedChange={(checked) => updateTheme({ useConfetti: checked })}
+                  />
+                  <Label htmlFor="confetti">Ativar Confete</Label>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-6">
+              <h4 className="font-medium mb-4 flex items-center gap-2">
+                <Zap className="w-4 h-4" />
+                Animações
+              </h4>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium">Estilo de Animação</Label>
+                  <Select
+                    value={theme.defaultAnimation || 'bounce'}
+                    onValueChange={(value) => updateTheme({ defaultAnimation: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="bounce">Salto</SelectItem>
+                      <SelectItem value="fade">Fade</SelectItem>
+                      <SelectItem value="slide">Deslizar</SelectItem>
+                      <SelectItem value="zoom">Zoom</SelectItem>
+                      <SelectItem value="flip">Virar</SelectItem>
+                      <SelectItem value="zoom-in">Zoom In</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-sm font-medium">Velocidade das Animações</Label>
+                  <Select
+                    value={theme.animationSpeed || 'normal'}
+                    onValueChange={(value) => updateTheme({ animationSpeed: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="slow">Lenta</SelectItem>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="fast">Rápida</SelectItem>
+                      <SelectItem value="instant">Instantânea</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="rewards" className="space-y-4">
-          <MicroRewards 
-            theme={theme}
-            onUpdate={onUpdate}
-            quizId={quizId || 'default'}
-          />
-        </TabsContent>
           </Tabs>
         </div>
 

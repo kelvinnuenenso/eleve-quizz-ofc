@@ -1,6 +1,7 @@
 // Real Analytics System - FASE 1: COLETA REAL DE DADOS
 import { Quiz, Result, Lead, QuizAnswer } from '@/types/quiz';
-import { localDB } from './localStorage';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 export interface AnalyticsEvent {
   id: string;
@@ -47,6 +48,12 @@ export interface QuizSession {
 class RealAnalyticsSystem {
   private currentSession: QuizSession | null = null;
   private events: AnalyticsEvent[] = [];
+  private userId: string | null = null;
+
+  // Set user ID for analytics
+  setUserId(userId: string | null) {
+    this.userId = userId;
+  }
 
   // Initialize session when quiz starts
   initializeSession(quiz: Quiz, utmParams: Record<string, string> = {}): string {
@@ -85,7 +92,7 @@ class RealAnalyticsSystem {
   }
 
   // Track step/question view
-  trackQuestionView(stepIndex: number, question: any) {
+  async trackQuestionView(stepIndex: number, question: any) {
     if (!this.currentSession) return;
 
     // End previous step timing
@@ -97,18 +104,18 @@ class RealAnalyticsSystem {
     this.currentSession.currentStep = stepIndex;
     this.currentSession.stepStartTimes[stepIndex] = Date.now();
 
-    this.trackEvent('question_view', {
+    await this.trackEvent('question_view', {
       stepIndex,
       questionId: question.id,
       questionType: question.type,
       questionTitle: question.title
     });
 
-    this.persistSession();
+    await this.persistSession();
   }
 
   // Track question answer
-  trackQuestionAnswer(stepIndex: number, question: any, answer: any, timeSpent: number) {
+  async trackQuestionAnswer(stepIndex: number, question: any, answer: any, timeSpent: number) {
     if (!this.currentSession) return;
 
     const newAnswer = {
@@ -119,7 +126,7 @@ class RealAnalyticsSystem {
     this.currentSession.answers.push(newAnswer);
     this.currentSession.stepEndTimes[stepIndex] = Date.now();
 
-    this.trackEvent('question_answer', {
+    await this.trackEvent('question_answer', {
       stepIndex,
       questionId: question.id,
       questionType: question.type,
@@ -128,27 +135,27 @@ class RealAnalyticsSystem {
       totalTimeElapsed: Date.now() - this.currentSession.startTime
     });
 
-    this.persistSession();
+    await this.persistSession();
   }
 
   // Track drop off
-  trackDropOff(stepIndex: number, reason?: string) {
+  async trackDropOff(stepIndex: number, reason?: string) {
     if (!this.currentSession) return;
 
     this.currentSession.dropOffPoint = stepIndex;
 
-    this.trackEvent('drop_off', {
+    await this.trackEvent('drop_off', {
       stepIndex,
       reason,
       timeSpent: Date.now() - this.currentSession.startTime,
       completionPercentage: (stepIndex / this.currentSession.totalSteps) * 100
     });
 
-    this.persistSession();
+    await this.persistSession();
   }
 
   // Track quiz completion
-  trackCompletion(result: Result) {
+  async trackCompletion(result: Result) {
     if (!this.currentSession) return;
 
     this.currentSession.completed = true;
@@ -156,7 +163,7 @@ class RealAnalyticsSystem {
 
     const totalTime = Date.now() - this.currentSession.startTime;
 
-    this.trackEvent('complete', {
+    await this.trackEvent('complete', {
       totalTime,
       totalQuestions: this.currentSession.totalSteps,
       score: result.score,
@@ -164,16 +171,16 @@ class RealAnalyticsSystem {
       answers: result.answers
     });
 
-    this.persistSession();
+    await this.persistSession();
   }
 
   // Track lead capture
-  trackLeadCapture(lead: Lead) {
+  async trackLeadCapture(lead: Lead) {
     if (!this.currentSession) return;
 
     this.currentSession.leadCaptured = true;
 
-    this.trackEvent('lead_capture', {
+    await this.trackEvent('lead_capture', {
       leadId: lead.id,
       email: lead.email,
       name: lead.name,
@@ -181,11 +188,11 @@ class RealAnalyticsSystem {
       captureTime: Date.now() - this.currentSession.startTime
     });
 
-    this.persistSession();
+    await this.persistSession();
   }
 
   // Generic event tracking
-  private trackEvent(eventType: AnalyticsEvent['eventType'], eventData: any) {
+  private async trackEvent(eventType: AnalyticsEvent['eventType'], eventData: any) {
     if (!this.currentSession) return;
 
     const event: AnalyticsEvent = {
@@ -202,33 +209,76 @@ class RealAnalyticsSystem {
     };
 
     this.events.push(event);
-    this.persistEvents();
+    await this.persistEvents();
   }
 
-  // Persist session to localStorage
-  private persistSession() {
+  // Persist session to Supabase
+  private async persistSession() {
     if (!this.currentSession) return;
     
     try {
-      const sessions = JSON.parse(localStorage.getItem('analytics_sessions') || '[]');
-      const existingIndex = sessions.findIndex((s: QuizSession) => s.id === this.currentSession!.id);
+      const { error } = await supabase
+        .from('analytics_sessions')
+        .upsert({
+          session_id: this.currentSession.id,
+          quiz_id: this.currentSession.quizId,
+          user_id: this.userId,
+          start_time: this.currentSession.startTime,
+          current_step: this.currentSession.currentStep,
+          total_steps: this.currentSession.totalSteps,
+          step_start_times: this.currentSession.stepStartTimes,
+          step_end_times: this.currentSession.stepEndTimes,
+          answers: this.currentSession.answers,
+          drop_off_point: this.currentSession.dropOffPoint,
+          completed: this.currentSession.completed,
+          lead_captured: this.currentSession.leadCaptured,
+          utm_params: this.currentSession.utmParams,
+          device_info: this.currentSession.deviceInfo
+        });
       
-      if (existingIndex >= 0) {
-        sessions[existingIndex] = this.currentSession;
+      if (error) {
+        console.error('Error persisting session to Supabase:', error);
       } else {
-        sessions.push(this.currentSession);
+        console.log('Analytics session saved:', this.currentSession.id);
       }
-      
-      localStorage.setItem('analytics_sessions', JSON.stringify(sessions));
     } catch (error) {
       console.error('Error persisting session:', error);
     }
   }
 
-  // Persist events to localStorage
-  private persistEvents() {
+  // Persist events to Supabase
+  private async persistEvents() {
     try {
-      localStorage.setItem('analytics_events', JSON.stringify(this.events));
+      // Save all new events to Supabase
+      const newEvents = this.events.filter(event => !event.id.includes('saved-'));
+      
+      if (newEvents.length > 0) {
+        const eventsToSave = newEvents.map(event => ({
+          quiz_id: event.quizId,
+          session_id: event.sessionId,
+          user_id: this.userId,
+          event_type: event.eventType,
+          event_data: event.eventData,
+          device_info: event.deviceInfo,
+          utm_params: event.utmParams,
+          referrer: event.referrer,
+          user_agent: event.userAgent
+        }));
+        
+        const { error } = await supabase
+          .from('analytics_events')
+          .insert(eventsToSave);
+        
+        if (error) {
+          console.error('Error saving events to Supabase:', error);
+        } else {
+          console.log('Analytics events saved:', newEvents.length);
+          // Mark events as saved
+          newEvents.forEach(event => {
+            event.id = `saved-${event.id}`;
+          });
+        }
+      }
     } catch (error) {
       console.error('Error persisting events:', error);
     }
@@ -267,51 +317,69 @@ class RealAnalyticsSystem {
     };
   }
 
-  // Get analytics data for dashboard
-  getAnalyticsData(quizId: string, dateRangeStart?: Date, dateRangeEnd?: Date) {
+  // Get analytics data for dashboard from Supabase
+  async getAnalyticsData(quizId: string, userId: string, dateRangeStart?: Date, dateRangeEnd?: Date) {
     try {
-      const events = JSON.parse(localStorage.getItem('analytics_events') || '[]') as AnalyticsEvent[];
-      const sessions = JSON.parse(localStorage.getItem('analytics_sessions') || '[]') as QuizSession[];
+      // Fetch events from Supabase
+      const { data: events, error: eventsError } = await supabase
+        .from('analytics_events')
+        .select('*')
+        .eq('quiz_id', quizId)
+        .eq('user_id', userId);
       
-      const quizEvents = events.filter(e => e.quizId === quizId);
-      const quizSessions = sessions.filter(s => s.quizId === quizId);
+      if (eventsError) {
+        console.error('Error fetching events:', eventsError);
+        return null;
+      }
+
+      // Fetch sessions from Supabase
+      const { data: sessions, error: sessionsError } = await supabase
+        .from('analytics_sessions')
+        .select('*')
+        .eq('quiz_id', quizId)
+        .eq('user_id', userId);
+      
+      if (sessionsError) {
+        console.error('Error fetching sessions:', sessionsError);
+        return null;
+      }
 
       // Apply date filter if provided
       const filteredEvents = dateRangeStart || dateRangeEnd 
-        ? quizEvents.filter(e => {
-            const eventDate = new Date(e.timestamp);
+        ? events.filter((e: any) => {
+            const eventDate = new Date(e.created_at);
             if (dateRangeStart && eventDate < dateRangeStart) return false;
             if (dateRangeEnd && eventDate > dateRangeEnd) return false;
             return true;
           })
-        : quizEvents;
+        : events;
 
       const filteredSessions = dateRangeStart || dateRangeEnd
-        ? quizSessions.filter(s => {
-            const sessionDate = new Date(s.startTime);
+        ? sessions.filter((s: any) => {
+            const sessionDate = new Date(s.created_at);
             if (dateRangeStart && sessionDate < dateRangeStart) return false;
             if (dateRangeEnd && sessionDate > dateRangeEnd) return false;
             return true;
           })
-        : quizSessions;
+        : sessions;
 
       // Calculate metrics
-      const totalViews = filteredEvents.filter(e => e.eventType === 'view').length;
-      const totalStarts = filteredEvents.filter(e => e.eventType === 'start').length;
-      const totalCompletions = filteredEvents.filter(e => e.eventType === 'complete').length;
-      const totalLeads = filteredEvents.filter(e => e.eventType === 'lead_capture').length;
-      const totalDropOffs = filteredEvents.filter(e => e.eventType === 'drop_off').length;
+      const totalViews = filteredEvents.filter((e: any) => e.event_type === 'view').length;
+      const totalStarts = filteredEvents.filter((e: any) => e.event_type === 'start').length;
+      const totalCompletions = filteredEvents.filter((e: any) => e.event_type === 'complete').length;
+      const totalLeads = filteredEvents.filter((e: any) => e.event_type === 'lead_capture').length;
+      const totalDropOffs = filteredEvents.filter((e: any) => e.event_type === 'drop_off').length;
 
       const conversionRate = totalStarts > 0 ? Math.round((totalLeads / totalStarts) * 100) : 0;
       const completionRate = totalStarts > 0 ? Math.round((totalCompletions / totalStarts) * 100) : 0;
       const dropOffRate = totalStarts > 0 ? Math.round((totalDropOffs / totalStarts) * 100) : 0;
 
       // Calculate average completion time
-      const completedSessions = filteredSessions.filter(s => s.completed);
+      const completedSessions = filteredSessions.filter((s: any) => s.completed);
       const avgCompletionTime = completedSessions.length > 0 
-        ? completedSessions.reduce((acc, s) => {
-            const lastStepTime = Math.max(...Object.values(s.stepEndTimes));
-            return acc + (lastStepTime - s.startTime);
+        ? completedSessions.reduce((acc: number, s: any) => {
+            const lastStepTime = Math.max(...Object.values(s.step_end_times));
+            return acc + (lastStepTime - s.start_time);
           }, 0) / completedSessions.length / 1000 / 60 // Convert to minutes
         : 0;
 

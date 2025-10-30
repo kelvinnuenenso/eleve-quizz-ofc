@@ -1,6 +1,7 @@
 // Firecrawl SDK removed for browser builds; using Edge Function proxy
 // import Firecrawl from '@mendable/firecrawl-js';
 import { Quiz, Question, QuestionType } from '@/types/quiz';
+import { generateUniquePublicId } from '@/lib/supabaseQuiz';
 import { z } from 'zod';
 
 interface ImportResult {
@@ -91,7 +92,7 @@ static async importQuiz(url: string): Promise<ImportResult> {
       };
     }
 
-    const quiz = this.convertToQuiz(platformData);
+    const quiz = await this.convertToQuiz(platformData);
     return { success: true, data: quiz };
   } catch (error) {
     console.error('Error importing quiz:', error);
@@ -320,7 +321,7 @@ static async importQuiz(url: string): Promise<ImportResult> {
     }
   }
 
-  private static convertToQuiz(platformData: PlatformData): Quiz {
+  private static async convertToQuiz(platformData: PlatformData): Promise<Quiz> {
     const questions: Question[] = platformData.questions.map((q, index) => {
       let questionType: QuestionType = 'short_text';
       
@@ -348,7 +349,7 @@ static async importQuiz(url: string): Promise<ImportResult> {
 
     return {
       id: crypto.randomUUID(),
-      publicId: Math.random().toString(36).slice(2, 8),
+      publicId: await generateUniquePublicId(platformData.title),
       name: platformData.title,
       description: `Quiz importado de ${platformData.platform}`,
       status: 'draft',

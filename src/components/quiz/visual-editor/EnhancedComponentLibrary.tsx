@@ -9,7 +9,7 @@ import { useDraggable } from '@dnd-kit/core';
 import { 
   Type, Image, Video, MousePointer, FileText, HelpCircle, 
   MessageSquare, RotateCcw, BarChart3, Sparkles, CreditCard,
-  Activity, Space, Check, Search, Layers, Zap, Heart, Target
+  Activity, Space, Check, Search, Layers, Zap, Heart, Target, UserPlus
 } from 'lucide-react';
 
 interface ComponentItem {
@@ -160,6 +160,20 @@ const COMPONENT_LIBRARY: ComponentItem[] = [
     description: 'Checkbox de aceitação de termos',
     icon: <Check className="w-4 h-4" />, 
     category: 'structure' 
+  },
+  { 
+    type: 'lead_capture', 
+    name: 'Coleta de Lead', 
+    description: 'Formulário para captura de leads',
+    icon: <UserPlus className="w-4 h-4" />, 
+    category: 'interaction' 
+  },
+  { 
+    type: 'lead_registration', 
+    name: 'Etapa Cadastro de Lead', 
+    description: 'Etapa completa de coleta de leads com campos pré-configurados',
+    icon: <UserPlus className="w-4 h-4" />, 
+    category: 'interaction' 
   }
 ];
 
@@ -177,11 +191,13 @@ function DraggableComponent({ component, onAdd }: DraggableComponentProps) {
     isDragging,
   } = useDraggable({
     id: `component-${component.type}`,
+    data: {
+      type: component.type
+    }
   });
 
   const style = transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-    opacity: isDragging ? 0.5 : 1,
   } : undefined;
 
   return (
@@ -191,25 +207,17 @@ function DraggableComponent({ component, onAdd }: DraggableComponentProps) {
       {...listeners}
       {...attributes}
       className={`p-3 hover:shadow-md transition-all cursor-grab active:cursor-grabbing ${
-        isDragging ? 'ring-2 ring-primary' : ''
-      } ${component.premium ? 'border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50' : ''}`}
+        isDragging ? 'ring-2 ring-primary opacity-50' : ''
+      }`}
       onClick={() => onAdd(component.type)}
     >
       <div className="flex items-start gap-3">
-        <div className={`p-2 rounded-lg ${
-          component.premium ? 'bg-yellow-100' : 'bg-muted'
-        }`}>
+        <div className="p-2 rounded-lg bg-muted">
           {component.icon}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h4 className="font-medium text-sm truncate">{component.name}</h4>
-            {component.premium && (
-              <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 text-xs">
-                <Heart className="w-3 h-3 mr-1" />
-                Pro
-              </Badge>
-            )}
           </div>
           <p className="text-xs text-muted-foreground line-clamp-2">
             {component.description}
@@ -222,12 +230,15 @@ function DraggableComponent({ component, onAdd }: DraggableComponentProps) {
 
 interface EnhancedComponentLibraryProps {
   onComponentAdd: (type: ComponentType) => void;
+  userPlan?: 'free' | 'pro' | 'premium';
 }
 
-export function EnhancedComponentLibrary({ onComponentAdd }: EnhancedComponentLibraryProps) {
+export function EnhancedComponentLibrary({ onComponentAdd, userPlan = 'premium' }: EnhancedComponentLibraryProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
+  // TEMPORARY: Unlock all components for all users
+  // This bypasses plan restrictions to make all premium components accessible
   const filteredComponents = COMPONENT_LIBRARY.filter(component => {
     const matchesSearch = component.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          component.description.toLowerCase().includes(searchTerm.toLowerCase());

@@ -11,7 +11,8 @@ export type QuestionType =
   | 'date' 
   | 'file' 
   | 'consent' 
-  | 'cta';
+  | 'cta'
+  | 'lead_capture';
 
 // Novos tipos de componentes para o construtor visual
 export type ComponentType =
@@ -33,7 +34,9 @@ export type ComponentType =
   | 'terms'
   | 'multiple_choice'
   | 'level_slider'
-  | 'rating';
+  | 'rating'
+  | 'lead_capture'
+  | 'lead_registration';
 
 export interface QuestionOption {
   id: string;
@@ -72,6 +75,22 @@ export interface Question {
   logic?: any;
   score_weight?: number;
   settings?: any;
+}
+
+export interface LeadCaptureQuestion extends Question {
+  type: 'lead_capture';
+  settings: {
+    fields: {
+      name: boolean;
+      email: boolean;
+      phone: boolean;
+      [key: string]: boolean;
+    };
+    introText: string;
+    successMessage: string;
+    errorMessage: string;
+    buttonText: string;
+  };
 }
 
 export interface QuizTheme {
@@ -313,12 +332,30 @@ export interface Component {
   customStyles?: string;
 }
 
+export interface LeadCaptureComponent extends Component {
+  type: 'lead_capture';
+  properties: LeadCaptureComponentProperties;
+}
+
 export interface ComponentProperties {
   title?: string;
   text?: string;
   placeholder?: string;
   options?: Array<{ id: string; label: string; value?: any }>;
   [key: string]: any;
+}
+
+export interface LeadCaptureComponentProperties extends ComponentProperties {
+  fields: {
+    name: boolean;
+    email: boolean;
+    phone: boolean;
+    [key: string]: boolean;
+  };
+  introText: string;
+  successMessage: string;
+  errorMessage: string;
+  buttonText: string;
 }
 
 export interface WrittenResponseConfig {
@@ -368,10 +405,21 @@ export interface ComponentCondition {
 // Sistema de etapas
 export interface QuizStep {
   id: string;
+  type: 'question' | 'result' | 'custom_lead' | 'lead_registration';
   name: string;
   title: string;
   components: Component[];
   logic?: StepLogic;
+  data?: any;
+}
+
+export interface CustomLeadStepData {
+  title: string;
+  fields: (string | { label: string; type: string; placeholder: string })[];
+  buttonText: string;
+  successMessage: string;
+  errorMessage: string;
+  required: boolean;
 }
 
 export interface StepLogic {
@@ -587,6 +635,11 @@ export interface QuizRedirectSettings {
   enabled: boolean;
   url?: string;
   overrideResults?: boolean; // Se true, substitui a exibição de resultados
+  redirect_type?: 'url' | 'whatsapp'; // New field for redirect type
+  whatsapp?: {
+    phone?: string;
+    message?: string;
+  };
 }
 
 export interface QuizFlow {

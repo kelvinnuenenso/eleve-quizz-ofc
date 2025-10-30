@@ -17,6 +17,20 @@ CREATE TABLE IF NOT EXISTS public.quizzes (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Tabela para armazenar perfis de usuários
+CREATE TABLE IF NOT EXISTS public.user_profiles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  display_name TEXT,
+  username TEXT,
+  bio TEXT,
+  avatar_url TEXT,
+  website TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id)
+);
+
 -- Tabela para armazenar resultados de quizzes
 CREATE TABLE IF NOT EXISTS public.quiz_results (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -126,6 +140,7 @@ CREATE INDEX IF NOT EXISTS idx_webhook_logs_webhook_id ON public.webhook_logs(we
 
 -- RLS Policies
 ALTER TABLE public.quizzes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quiz_results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quiz_leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
@@ -149,6 +164,16 @@ CREATE POLICY "Users can delete their own quizzes" ON public.quizzes
 -- Política para visualizar quizzes publicados sem autenticação
 CREATE POLICY "Anyone can view published quizzes" ON public.quizzes
   FOR SELECT USING (status = 'published');
+
+-- Políticas para perfis de usuários
+CREATE POLICY "Users can view their own profile" ON public.user_profiles
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own profile" ON public.user_profiles
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "Public profiles are viewable by everyone" ON public.user_profiles
+  FOR SELECT USING (true);
 
 -- Políticas para resultados de quiz
 CREATE POLICY "Users can view results from their quizzes" ON public.quiz_results
@@ -210,6 +235,11 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER update_quizzes_updated_at
   BEFORE UPDATE ON public.quizzes
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_updated_at_column();
+
+CREATE OR REPLACE TRIGGER update_user_profiles_updated_at
+  BEFORE UPDATE ON public.user_profiles
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
 

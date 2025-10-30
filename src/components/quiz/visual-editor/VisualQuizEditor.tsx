@@ -30,6 +30,7 @@ export function VisualQuizEditor({
   const [activeStepId, setActiveStepId] = useState<string>(quiz.steps?.[0]?.id || '');
   const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [history, setHistory] = useState<Quiz[]>([quiz]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -919,6 +920,7 @@ export function VisualQuizEditor({
                 size="sm" 
                 onClick={() => setPreviewMode('desktop')}
                 title="Visualização Desktop"
+                className={previewMode === 'desktop' ? 'bg-primary text-primary-foreground' : ''}
               >
                 <Monitor className="w-4 h-4" />
               </Button>
@@ -927,6 +929,7 @@ export function VisualQuizEditor({
                 size="sm" 
                 onClick={() => setPreviewMode('tablet')}
                 title="Visualização Tablet"
+                className={previewMode === 'tablet' ? 'bg-primary text-primary-foreground' : ''}
               >
                 <Tablet className="w-4 h-4" />
               </Button>
@@ -935,14 +938,20 @@ export function VisualQuizEditor({
                 size="sm" 
                 onClick={() => setPreviewMode('mobile')}
                 title="Visualização Mobile"
+                className={previewMode === 'mobile' ? 'bg-primary text-primary-foreground' : ''}
               >
                 <Smartphone className="w-4 h-4" />
               </Button>
             </div>
 
-            <Button variant="outline" size="sm" disabled={isLoading}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setIsPreviewMode(!isPreviewMode)}
+              disabled={isLoading}
+            >
               <Eye className="w-4 h-4 mr-2" />
-              Preview
+              {isPreviewMode ? 'Editar' : 'Preview'}
             </Button>
 
             <Button 
@@ -995,94 +1004,136 @@ export function VisualQuizEditor({
 
           <ResizableHandle withHandle />
 
-          {/* Painel Central: Canvas de Edição */}
+          {/* Painel Central: Canvas de Edição ou Preview */}
           <ResizablePanel defaultSize={48} minSize={30}>
             <div className="h-full bg-slate-50 p-4 flex flex-col">
-              <Card className="flex-1 shadow-sm">
-                <div className="h-full p-6 overflow-y-auto">
-                  {activeStep ? (
-                    <DragDropContext onDragEnd={handleDragEnd}>
-                      <Droppable droppableId="components">
-                        {(provided, snapshot) => (
-                          <div 
-                            {...provided.droppableProps} 
-                            ref={provided.innerRef} 
-                            className={`space-y-4 min-h-full transition-colors ${
-                              snapshot.isDraggingOver ? 'bg-primary/5' : ''
-                            }`}
-                          >
-                            {activeStep.components.length === 0 && (
-                              <div className="flex items-center justify-center h-40 border-2 border-dashed rounded-lg text-muted-foreground">
-                                <div className="text-center">
-                                  <Layers className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                                  <p className="text-sm">Arraste componentes aqui para começar</p>
-                                  <p className="text-xs mt-1">Ou clique em um componente na biblioteca</p>
-                                </div>
-                              </div>
-                            )}
-                            
-                            {activeStep.components.map((component, index) => (
-                              <Draggable key={component.id} draggableId={component.id} index={index}>
-                                {(provided, snapshot) => (
-                                  <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    className={`
-                                      group relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200
-                                      ${selectedComponentId === component.id 
-                                        ? 'border-primary bg-primary/5 shadow-md' 
-                                        : 'border-border hover:border-primary/50 hover:shadow-sm'
-                                      }
-                                      ${snapshot.isDragging ? 'shadow-lg rotate-2 scale-105' : ''}
-                                    `}
-                                    onClick={() => setSelectedComponentId(component.id)}
-                                  >
-                                    {/* Handle de drag */}
-                                    <div 
-                                      {...provided.dragHandleProps}
-                                      className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                      <Move className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                                    </div>
-                                    
-                                    {/* Badge do tipo */}
-                                    <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <Badge variant="outline" className="text-xs">
-                                        {component.type}
-                                      </Badge>
-                                    </div>
-                                    
-                                    {/* Preview do componente */}
-                                    <div className="mt-6">
-                                      {renderComponentPreview(component)}
-                                    </div>
-                                    
-                                    {/* Indicador de seleção */}
-                                    {selectedComponentId === component.id && (
-                                      <div className="absolute -top-1 -right-1">
-                                        <CheckCircle className="w-5 h-5 text-primary bg-background rounded-full" />
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </Draggable>
-                            ))}
-                            {provided.placeholder}
-                          </div>
-                        )}
-                      </Droppable>
-                    </DragDropContext>
-                  ) : (
-                    <div className="flex items-center justify-center h-full text-muted-foreground">
-                      <div className="text-center">
-                        <Settings className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                        <p className="text-lg font-medium">Selecione uma etapa</p>
-                        <p className="text-sm mt-1">Escolha uma etapa na barra lateral para começar a editar</p>
+              {isPreviewMode ? (
+                <Card className="flex-1 shadow-sm overflow-hidden">
+                  <div className="h-full flex items-center justify-center p-4">
+                    {/* Device Frame Container */}
+                    <div 
+                      className="bg-background border rounded-lg shadow-lg overflow-hidden transition-all duration-300"
+                      style={{
+                        width: previewMode === 'desktop' ? '1280px' : previewMode === 'tablet' ? '768px' : '390px',
+                        maxWidth: '100%',
+                        minHeight: '600px',
+                        display: 'flex',
+                        flexDirection: 'column'
+                      }}
+                    >
+                      {/* Device Frame Header */}
+                      <div className="border-b bg-muted/30 p-2 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {previewMode === 'desktop' && <Monitor className="w-4 h-4" />}
+                          {previewMode === 'tablet' && <Tablet className="w-4 h-4" />}
+                          {previewMode === 'mobile' && <Smartphone className="w-4 h-4" />}
+                          <span className="text-xs font-medium capitalize">{previewMode}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                          <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        </div>
+                      </div>
+                      
+                      {/* Preview Content */}
+                      <div className="flex-1 overflow-auto">
+                        <PreviewPanel 
+                          step={activeStep || { id: '', name: '', title: '', components: [] }} 
+                          mode={previewMode}
+                          theme={quiz.theme}
+                        />
                       </div>
                     </div>
-                  )}
-                </div>
-              </Card>
+                  </div>
+                </Card>
+              ) : (
+                <Card className="flex-1 shadow-sm">
+                  <div className="h-full p-6 overflow-y-auto">
+                    {activeStep ? (
+                      <DragDropContext onDragEnd={handleDragEnd}>
+                        <Droppable droppableId="components">
+                          {(provided, snapshot) => (
+                            <div 
+                              {...provided.droppableProps} 
+                              ref={provided.innerRef} 
+                              className={`space-y-4 min-h-full transition-colors ${
+                                snapshot.isDraggingOver ? 'bg-primary/5' : ''
+                              }`}
+                            >
+                              {activeStep.components.length === 0 && (
+                                <div className="flex items-center justify-center h-40 border-2 border-dashed rounded-lg text-muted-foreground">
+                                  <div className="text-center">
+                                    <Layers className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                    <p className="text-sm">Arraste componentes aqui para começar</p>
+                                    <p className="text-xs mt-1">Ou clique em um componente na biblioteca</p>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {activeStep.components.map((component, index) => (
+                                <Draggable key={component.id} draggableId={component.id} index={index}>
+                                  {(provided, snapshot) => (
+                                    <div
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                      className={`
+                                        group relative p-4 border-2 rounded-lg cursor-pointer transition-all duration-200
+                                        ${selectedComponentId === component.id 
+                                          ? 'border-primary bg-primary/5 shadow-md' 
+                                          : 'border-border hover:border-primary/50 hover:shadow-sm'
+                                        }
+                                        ${snapshot.isDragging ? 'shadow-lg rotate-2 scale-105' : ''}
+                                      `}
+                                      onClick={() => setSelectedComponentId(component.id)}
+                                    >
+                                      {/* Handle de drag */}
+                                      <div 
+                                        {...provided.dragHandleProps}
+                                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      >
+                                        <Move className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                                      </div>
+                                      
+                                      {/* Badge do tipo */}
+                                      <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Badge variant="outline" className="text-xs">
+                                          {component.type}
+                                        </Badge>
+                                      </div>
+                                      
+                                      {/* Preview do componente */}
+                                      <div className="mt-6">
+                                        {renderComponentPreview(component)}
+                                      </div>
+                                      
+                                      {/* Indicador de seleção */}
+                                      {selectedComponentId === component.id && (
+                                        <div className="absolute -top-1 -right-1">
+                                          <CheckCircle className="w-5 h-5 text-primary bg-background rounded-full" />
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </Draggable>
+                              ))}
+                              {provided.placeholder}
+                            </div>
+                          )}
+                        </Droppable>
+                      </DragDropContext>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        <div className="text-center">
+                          <Settings className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                          <p className="text-lg font-medium">Selecione uma etapa</p>
+                          <p className="text-sm mt-1">Escolha uma etapa na barra lateral para começar a editar</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              )}
             </div>
           </ResizablePanel>
 

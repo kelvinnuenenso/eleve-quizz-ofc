@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { QuizOutcome, Quiz } from '@/types/quiz';
-import { Plus, Trash2, Trophy, Target, Zap, Heart, Star, Award, ExternalLink, Info } from 'lucide-react';
+import { Plus, Trash2, Trophy, Target, Zap, Heart, Star, Award, ExternalLink, Info, MessageCircle } from 'lucide-react';
 
 interface OutcomeEditorProps {
   outcomes: Record<string, QuizOutcome>;
@@ -56,17 +56,67 @@ const defaultOutcomes = [
 
 export function OutcomeEditor({ outcomes, quiz, onUpdate, onQuizUpdate }: OutcomeEditorProps) {
   const [isDynamic, setIsDynamic] = useState(Object.keys(outcomes).length > 1);
+  const [redirectType, setRedirectType] = useState<'url' | 'whatsapp'>(
+    (quiz.redirectSettings?.redirect_type === 'whatsapp' ? 'whatsapp' : 'url')
+  );
 
-  const redirectSettings = quiz.redirectSettings || { enabled: false, overrideResults: true };
+  const redirectSettings = quiz.redirectSettings || { 
+    enabled: false, 
+    overrideResults: true,
+    redirect_type: 'url'
+  };
 
   const validateUrl = (url: string): boolean => {
     return url.startsWith('http://') || url.startsWith('https://');
   };
 
+  const validateWhatsAppNumber = (phone: string): boolean => {
+    // Basic validation for WhatsApp numbers (digits only, with optional +)
+    const cleanPhone = phone.replace(/\D/g, '');
+    return cleanPhone.length >= 10 && cleanPhone.length <= 15;
+  };
+
+  const generateWhatsAppUrl = (phone: string, message: string): string => {
+    // Remove all non-digit characters except +
+    const cleanPhone = phone.replace(/[^\d\+]/g, '');
+    // URL encode the message
+    const encodedMessage = encodeURIComponent(message);
+    return `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+  };
+
   const updateRedirectSettings = (updates: Partial<typeof redirectSettings>) => {
+    // If we're changing to WhatsApp type, generate the URL
+    if (updates.redirect_type === 'whatsapp' && redirectSettings.whatsapp) {
+      const { phone, message } = redirectSettings.whatsapp;
+      if (phone && message && validateWhatsAppNumber(phone)) {
+        updates.url = generateWhatsAppUrl(phone, message);
+      }
+    }
+    
+    // If we're updating WhatsApp settings and it's the current type, regenerate URL
+    if (updates.whatsapp && redirectSettings.redirect_type === 'whatsapp') {
+      const phone = updates.whatsapp.phone || redirectSettings.whatsapp?.phone || '';
+      const message = updates.whatsapp.message || redirectSettings.whatsapp?.message || '';
+      if (phone && message && validateWhatsAppNumber(phone)) {
+        updates.url = generateWhatsAppUrl(phone, message);
+      }
+    }
+    
     onQuizUpdate({
       redirectSettings: { ...redirectSettings, ...updates }
     });
+  };
+
+  const updateRedirectType = (type: 'url' | 'whatsapp') => {
+    setRedirectType(type);
+    updateRedirectSettings({ 
+      redirect_type: type,
+      enabled: true // Enable when switching types
+    });
+  };
+
+  const toggleRedirect = (enabled: boolean) => {
+    updateRedirectSettings({ enabled });
   };
 
   const addOutcome = () => {
@@ -169,7 +219,13 @@ export function OutcomeEditor({ outcomes, quiz, onUpdate, onQuizUpdate }: Outcom
             <Switch
               id="redirect-enabled"
               checked={redirectSettings.enabled}
-              onCheckedChange={(enabled) => updateRedirectSettings({ enabled })}
+              onCheckedChange={(enabled) => {
+                toggleRedirect(enabled);
+                // If enabling and no type is selected, default to URL
+                if (enabled && !redirectSettings.redirect_type) {
+                  setRedirectType('url');
+                }
+              }}
             />
             <div className="flex items-center gap-1">
               <Label htmlFor="redirect-enabled">Redirecionar ao final</Label>
@@ -231,41 +287,234 @@ export function OutcomeEditor({ outcomes, quiz, onUpdate, onQuizUpdate }: Outcom
 
       {/* Configuração de Redirecionamento */}
       {redirectSettings.enabled && (
-        <Card className="p-4 space-y-4 border-orange-200 bg-orange-50/50">
+        <div className="space-y-4">
           <div className="flex items-center gap-2">
             <ExternalLink className="w-4 h-4 text-orange-600" />
             <h4 className="font-medium text-orange-900">Configuração de Redirecionamento</h4>
           </div>
           
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="redirect-url">URL de redirecionamento</Label>
-              <Input
-                id="redirect-url"
-                value={redirectSettings.url || ''}
-                onChange={(e) => updateRedirectSettings({ url: e.target.value })}
-                placeholder="https://seudominio.com/pagina"
-                className={`${
-                  redirectSettings.url && !validateUrl(redirectSettings.url)
-                    ? 'border-red-300 focus:border-red-500'
-                    : ''
-                }`}
+          {/* URL Redirect Card */}
+          <Card className={`p-4 transition-all duration-200 ${
+            redirectType === 'url' 
+              ? 'bg-muted/10 border-2 border-blue-400' 
+              : 'opacity-60 hover:opacity-100 hover:bg-muted/5'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <ExternalLink className="w-4 h-4 text-blue-600" />
+                <h5 className="font-medium text-blue-900">Redirecionamento Padrão (URL)</h5>
+              </div>
+              <Switch
+                checked={redirectType === 'url' && redirectSettings.enabled}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    updateRedirectType('url');
+                  } else {
+                    toggleRedirect(false);
+                  }
+                }}
               />
-              {redirectSettings.url && !validateUrl(redirectSettings.url) && (
-                <p className="text-sm text-red-600 mt-1">
-                  A URL deve começar com http:// ou https://
-                </p>
-              )}
             </div>
             
-            <div className="p-3 bg-orange-100 rounded-lg">
-              <p className="text-sm text-orange-800">
-                <strong>Nota:</strong> Este redirecionamento substituirá a exibição de resultados.
-                Os participantes serão enviados automaticamente para a URL configurada após completar o quiz.
+            {redirectType === 'url' ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Envie o participante para uma URL personalizada após o quiz.
+                </p>
+                
+                <div>
+                  <Label htmlFor="redirect-url">URL de destino</Label>
+                  <Input
+                    id="redirect-url"
+                    value={redirectSettings.url || ''}
+                    onChange={(e) => updateRedirectSettings({ url: e.target.value })}
+                    placeholder="https://seudominio.com/pagina"
+                    className={`${
+                      redirectSettings.url && !validateUrl(redirectSettings.url)
+                        ? 'border-red-300 focus:border-red-500'
+                        : ''
+                    }`}
+                  />
+                  {redirectSettings.url && !validateUrl(redirectSettings.url) && (
+                    <p className="text-sm text-red-600 mt-1">
+                      A URL deve começar com http:// ou https://
+                    </p>
+                  )}
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Texto do botão</Label>
+                    <Input
+                      value={Object.values(outcomes)[0]?.cta?.label || ''}
+                      onChange={(e) => {
+                        const firstOutcomeKey = Object.keys(outcomes)[0];
+                        if (firstOutcomeKey) {
+                          updateOutcome(firstOutcomeKey, {
+                            cta: { 
+                              ...Object.values(outcomes)[0]?.cta, 
+                              label: e.target.value 
+                            }
+                          });
+                        }
+                      }}
+                      placeholder="Continuar"
+                    />
+                  </div>
+                  <div>
+                    <Label>Ícone</Label>
+                    <Select
+                      value={Object.values(outcomes)[0]?.cta?.href ? 'external' : 'none'}
+                      onValueChange={(value) => {
+                        const firstOutcomeKey = Object.keys(outcomes)[0];
+                        if (firstOutcomeKey) {
+                          updateOutcome(firstOutcomeKey, {
+                            cta: { 
+                              ...Object.values(outcomes)[0]?.cta, 
+                              href: value === 'external' ? '#' : '' 
+                            }
+                          });
+                        }
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nenhum</SelectItem>
+                        <SelectItem value="external">Link Externo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Envie o participante para uma URL personalizada após o quiz.
               </p>
+            )}
+          </Card>
+          
+          {/* WhatsApp Redirect Card */}
+          <Card className={`p-4 transition-all duration-200 ${
+            redirectType === 'whatsapp' 
+              ? 'bg-muted/10 border-2 border-green-400' 
+              : 'opacity-60 hover:opacity-100 hover:bg-muted/5'
+          }`}>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-green-600" />
+                <h5 className="font-medium text-green-900">Redirecionamento via WhatsApp</h5>
+              </div>
+              <Switch
+                checked={redirectType === 'whatsapp' && redirectSettings.enabled}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    updateRedirectType('whatsapp');
+                  } else {
+                    toggleRedirect(false);
+                  }
+                }}
+              />
             </div>
-          </div>
-        </Card>
+            
+            {redirectType === 'whatsapp' ? (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Envie o participante diretamente para o WhatsApp com uma mensagem pré-preenchida.
+                </p>
+                
+                <div>
+                  <Label htmlFor="whatsapp-phone">Número do WhatsApp</Label>
+                  <Input
+                    id="whatsapp-phone"
+                    value={redirectSettings.whatsapp?.phone || ''}
+                    onChange={(e) => updateRedirectSettings({ 
+                      whatsapp: { 
+                        ...redirectSettings.whatsapp, 
+                        phone: e.target.value 
+                      } 
+                    })}
+                    placeholder="+55 11 99999-9999"
+                    className={`${
+                      redirectSettings.whatsapp?.phone && !validateWhatsAppNumber(redirectSettings.whatsapp.phone)
+                        ? 'border-red-300 focus:border-red-500'
+                        : ''
+                    }`}
+                  />
+                  {redirectSettings.whatsapp?.phone && !validateWhatsAppNumber(redirectSettings.whatsapp.phone) && (
+                    <p className="text-sm text-red-600 mt-1">
+                      Número inválido. Deve conter entre 10 e 15 dígitos.
+                    </p>
+                  )}
+                </div>
+                
+                <div>
+                  <Label htmlFor="whatsapp-message">Mensagem</Label>
+                  <Textarea
+                    id="whatsapp-message"
+                    value={redirectSettings.whatsapp?.message || ''}
+                    onChange={(e) => updateRedirectSettings({ 
+                      whatsapp: { 
+                        ...redirectSettings.whatsapp, 
+                        message: e.target.value 
+                      } 
+                    })}
+                    placeholder="Olá! Gostaria de saber mais sobre..."
+                    rows={3}
+                  />
+                </div>
+                
+                <div>
+                  <Label>Texto do botão</Label>
+                  <Input
+                    value={Object.values(outcomes)[0]?.cta?.label || ''}
+                    onChange={(e) => {
+                      const firstOutcomeKey = Object.keys(outcomes)[0];
+                      if (firstOutcomeKey) {
+                        updateOutcome(firstOutcomeKey, {
+                          cta: { 
+                            ...Object.values(outcomes)[0]?.cta, 
+                            label: e.target.value 
+                          }
+                        });
+                      }
+                    }}
+                    placeholder="Falar no WhatsApp"
+                  />
+                </div>
+                
+                {redirectSettings.whatsapp?.phone && redirectSettings.whatsapp?.message && validateWhatsAppNumber(redirectSettings.whatsapp.phone) && (
+                  <div className="p-3 bg-green-100 rounded-lg">
+                    <p className="text-sm text-green-800">
+                      <strong>Link gerado:</strong> {generateWhatsAppUrl(redirectSettings.whatsapp.phone, redirectSettings.whatsapp.message)}
+                    </p>
+                  </div>
+                )}
+                
+                {(redirectSettings.whatsapp?.phone || redirectSettings.whatsapp?.message) && 
+                 !(redirectSettings.whatsapp?.phone && redirectSettings.whatsapp?.message) && (
+                  <div className="p-3 bg-yellow-100 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      Preencha ambos os campos (número e mensagem) para gerar o link do WhatsApp.
+                    </p>
+                  </div>
+                )}
+                
+                <div className="p-3 bg-orange-100 rounded-lg">
+                  <p className="text-sm text-orange-800">
+                    <strong>Nota:</strong> Este redirecionamento substitui o resultado padrão. 
+                    O participante será enviado automaticamente ao WhatsApp após concluir o quiz.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Envie o participante diretamente para o WhatsApp com uma mensagem pré-preenchida.
+              </p>
+            )}
+          </Card>
+        </div>
       )}
 
       <div className="space-y-4">

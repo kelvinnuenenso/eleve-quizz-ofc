@@ -28,6 +28,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+// Add DnD Kit imports
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface StepManagerProps {
   steps: QuizStep[];
@@ -36,6 +39,147 @@ interface StepManagerProps {
   onStepAdd: () => void;
   onStepUpdate: (stepId: string, updates: Partial<QuizStep>) => void;
   onStepDelete: (stepId: string) => void;
+  onStepReorder?: (oldIndex: number, newIndex: number) => void;
+}
+
+// Create a draggable step component
+function DraggableStep({ 
+  step, 
+  index, 
+  isActive, 
+  onClick,
+  onEdit,
+  onDelete,
+  onDuplicate
+}: { 
+  step: QuizStep; 
+  index: number;
+  isActive: boolean;
+  onClick: () => void;
+  onEdit: (step: QuizStep) => void;
+  onDelete: (stepId: string) => void;
+  onDuplicate: (step: QuizStep) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: step.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 1000 : undefined,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={`
+        p-2 cursor-pointer transition-all hover:shadow-sm group relative
+        ${isActive 
+          ? 'border-primary bg-primary/5 shadow-sm' 
+          : 'hover:border-primary/50'}
+        ${isDragging ? 'shadow-lg rotate-3' : ''}
+      `}
+      onClick={onClick}
+    >
+      <div className="flex items-center gap-2">
+        <div 
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing"
+        >
+          <GripVertical className="w-3 h-3 text-muted-foreground" />
+        </div>
+        
+        <div className="flex-1 min-w-0">
+          <div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs h-4 px-1">
+                {index + 1}
+              </Badge>
+              <span className="text-sm font-medium truncate">
+                {step.name}
+              </span>
+              {isActive && (
+                <ChevronRight className="w-3 h-3 text-primary" />
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge variant="secondary" className="text-xs h-4 px-1">
+                {step.components.length}
+              </Badge>
+              {step.title && (
+                <span className="text-xs text-muted-foreground truncate">
+                  {step.title}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Settings className="w-3 h-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => onEdit(step)}>
+              <Edit3 className="w-4 h-4 mr-2" />
+              Editar
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onDuplicate(step)}>
+              <Copy className="w-4 h-4 mr-2" />
+              Duplicar
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <DropdownMenuItem 
+                  className="text-destructive focus:text-destructive"
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir
+                </DropdownMenuItem>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir Etapa</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tem certeza que deseja excluir a etapa "{step.name}"? 
+                    Esta ação não pode ser desfeita e todos os componentes 
+                    desta etapa serão perdidos.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => onDelete(step.id)}
+                  >
+                    Excluir
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </Card>
+  );
 }
 
 export function StepManager({
@@ -44,7 +188,8 @@ export function StepManager({
   onStepSelect,
   onStepAdd,
   onStepUpdate,
-  onStepDelete
+  onStepDelete,
+  onStepReorder
 }: StepManagerProps) {
   const [editingStepId, setEditingStepId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
@@ -88,6 +233,7 @@ export function StepManager({
         id: crypto.randomUUID()
       }))
     };
+    // For now, we'll just log it since we don't have an onStepDuplicate prop
     console.log('Duplicate step:', newStep);
   };
 
@@ -178,121 +324,16 @@ export function StepManager({
           <div className="p-3 pt-0">
             <div className="space-y-2">
               {visibleSteps.map((step, index) => (
-                <Card
+                <DraggableStep
                   key={step.id}
-                  className={`
-                    p-2 cursor-pointer transition-all hover:shadow-sm group
-                    ${activeStepId === step.id 
-                      ? 'border-primary bg-primary/5 shadow-sm' 
-                      : 'hover:border-primary/50'}
-                  `}
+                  step={step}
+                  index={index}
+                  isActive={activeStepId === step.id}
                   onClick={() => onStepSelect(step.id)}
-                >
-                  <div className="flex items-center gap-2">
-                    <GripVertical className="w-3 h-3 text-muted-foreground" />
-                    
-                    <div className="flex-1 min-w-0">
-                      {editingStepId === step.id ? (
-                        <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
-                          <Input
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            placeholder="Nome da etapa"
-                            className="h-7 text-sm"
-                          />
-                          <div className="flex gap-1">
-                            <Button size="sm" onClick={saveEditing} className="h-6 px-2 text-xs">
-                              Salvar
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={cancelEditing} className="h-6 px-2 text-xs">
-                              Cancelar
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs h-4 px-1">
-                              {index + 1}
-                            </Badge>
-                            <span className="text-sm font-medium truncate">
-                              {step.name}
-                            </span>
-                            {activeStepId === step.id && (
-                              <ChevronRight className="w-3 h-3 text-primary" />
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="secondary" className="text-xs h-4 px-1">
-                              {step.components.length}
-                            </Badge>
-                            {step.title && (
-                              <span className="text-xs text-muted-foreground truncate">
-                                {step.title}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {editingStepId !== step.id && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Settings className="w-3 h-3" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => startEditing(step)}>
-                            <Edit3 className="w-4 h-4 mr-2" />
-                            Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => duplicateStep(step)}>
-                            <Copy className="w-4 h-4 mr-2" />
-                            Duplicar
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <DropdownMenuItem 
-                                className="text-destructive focus:text-destructive"
-                                onSelect={(e) => e.preventDefault()}
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Excluir
-                              </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Excluir Etapa</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Tem certeza que deseja excluir a etapa "{step.name}"? 
-                                  Esta ação não pode ser desfeita e todos os componentes 
-                                  desta etapa serão perdidos.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                <AlertDialogAction
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  onClick={() => onStepDelete(step.id)}
-                                >
-                                  Excluir
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-                </Card>
+                  onEdit={startEditing}
+                  onDelete={onStepDelete}
+                  onDuplicate={duplicateStep}
+                />
               ))}
 
               {hasMoreSteps && !showAllSteps && (

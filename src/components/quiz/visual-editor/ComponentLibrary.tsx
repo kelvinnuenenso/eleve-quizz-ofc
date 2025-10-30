@@ -160,9 +160,16 @@ const COMPONENT_CATEGORIES: ComponentCategory[] = [
 
 export function ComponentLibrary({ onAddComponent, userPlan }: ComponentLibraryProps) {
   const canUseComponent = (component: ComponentDefinition) => {
+    // TEMPORARY: Unlock all components for all users
+    // This bypasses plan restrictions to make all premium components accessible
+    return true;
+    
+    /*
+    // ORIGINAL CODE - commented out for reference
     if (component.isPremium && userPlan !== 'premium') return false;
     if (component.isPro && userPlan === 'free') return false;
     return true;
+    */
   };
 
   const getPlanBadge = (component: ComponentDefinition) => {
@@ -219,11 +226,13 @@ export function ComponentLibrary({ onAddComponent, userPlan }: ComponentLibraryP
             <span>Plano Atual:</span>
             <Badge variant="outline" className="capitalize">{userPlan}</Badge>
           </div>
+          {/* TEMPORARY: Hide upgrade message
           {userPlan === 'free' && (
             <p className="text-xs">
               Faça upgrade para acessar componentes Pro e Premium
             </p>
           )}
+          */}
         </div>
       </div>
     </div>
@@ -260,18 +269,18 @@ function ComponentCard({ component, canUse, planBadge, onAdd }: ComponentCardPro
             </div>
             <Button
               size="sm"
-              variant={canUse ? "default" : "secondary"}
+              variant="default"
               className="w-full h-7 text-xs"
               onClick={onAdd}
-              disabled={!canUse}
-              draggable={canUse}
+              // TEMPORARY: Enable all components
+              disabled={false}
+              draggable={true}
               onDragStart={(e) => {
-                if (canUse) {
-                  e.dataTransfer.setData('application/component-type', component.type);
-                }
+                // TEMPORARY: Allow dragging all components
+                e.dataTransfer.setData('application/component-type', component.type);
               }}
             >
-              {canUse ? 'Adicionar' : 'Requer Upgrade'}
+              Adicionar
             </Button>
           </div>
         </div>

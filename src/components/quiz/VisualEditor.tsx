@@ -1,6 +1,16 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
+import { 
+  DndContext, 
+  DragEndEvent, 
+  DragOverlay, 
+  DragStartEvent, 
+  PointerSensor, 
+  useSensor, 
+  useSensors,
+  closestCenter,
+  DragOverEvent
+} from '@dnd-kit/core';
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from '@/components/ui/resizable';
 import { Quiz, QuizStep, Component, ComponentType } from '@/types/quiz';
 import { ComponentLibrary } from './ComponentLibrary';
@@ -175,6 +185,34 @@ const DEFAULT_COMPONENTS: Record<ComponentType, Partial<Component>> = {
       defaultValue: 0,
       required: false
     }
+  },
+  lead_capture: {
+    type: 'lead_capture' as ComponentType,
+    content: {
+      fields: {
+        name: true,
+        email: true,
+        phone: false
+      },
+      introText: 'Preencha seus dados para continuar',
+      successMessage: 'Dados salvos com sucesso!',
+      errorMessage: 'Ocorreu um erro ao salvar os dados',
+      buttonText: 'Continuar'
+    }
+  },
+  lead_registration: {
+    type: 'lead_registration' as ComponentType,
+    content: {
+      fields: {
+        name: true,
+        email: true,
+        phone: false
+      },
+      introText: 'Registre-se para continuar',
+      successMessage: 'Registro realizado com sucesso!',
+      errorMessage: 'Ocorreu um erro no registro',
+      buttonText: 'Registrar'
+    }
   }
 };
 
@@ -334,6 +372,7 @@ export function VisualEditor({
     if (!quiz.steps || quiz.steps.length === 0) {
       const newStage: QuizStep = {
         id: `stage-${Date.now()}`,
+        type: 'custom_lead',
         name: 'Página Principal',
         title: '',
         components: []
@@ -380,6 +419,7 @@ export function VisualEditor({
   const handleStepAdd = useCallback(() => {
     const newStep: QuizStep = {
       id: `step-${Date.now()}`,
+      type: 'custom_lead',
       name: `Etapa ${(quiz.steps?.length || 0) + 1}`,
       title: '',
       components: []
@@ -467,11 +507,36 @@ export function VisualEditor({
     const { active } = event;
     if (typeof active.id === 'string' && active.id.startsWith('component-')) {
       setDraggedComponent(active.id.replace('component-', '') as ComponentType);
+      
+      // Prevent scroll during drag operations
+      const scrollArea = document.querySelector('.scroll-area-component-library');
+      if (scrollArea) {
+        (scrollArea as HTMLElement).style.overflow = 'hidden';
+      }
     }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    
+    // Re-enable scroll after drag
+    const scrollArea = document.querySelector('.scroll-area-component-library');
+    if (scrollArea) {
+      (scrollArea as HTMLElement).style.overflow = 'auto';
+    }
+    
+    // Check if we're dragging a step (reordering steps)
+    const isDraggingStep = quiz.steps?.some(step => step.id === active.id);
+    if (isDraggingStep && over) {
+      const oldIndex = quiz.steps?.findIndex(step => step.id === active.id) ?? -1;
+      const newIndex = quiz.steps?.findIndex(step => step.id === over.id) ?? -1;
+      
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        handleStepReorder(oldIndex, newIndex);
+      }
+      setDraggedComponent(null);
+      return;
+    }
     
     // Dragging component from library
     if (typeof active.id === 'string' && active.id.startsWith('component-')) {
@@ -559,6 +624,37 @@ export function VisualEditor({
     }
   }, [historyIndex, history, onUpdate, toast]);
 
+  const handleStepReorder = useCallback((oldIndex: number, newIndex: number) => {
+    if (!quiz.steps) return;
+    
+    const reorderedSteps = arrayMove(quiz.steps, oldIndex, newIndex);
+    
+    updateQuiz(q => ({
+      ...q,
+      steps: reorderedSteps
+    }));
+    
+    toast({
+      title: "Etapas reordenadas",
+      description: "A ordem das etapas foi atualizada.",
+      duration: 1500
+    });
+  }, [quiz.steps, updateQuiz, toast]);
+
+  // Handle drag end for steps
+  const handleStepDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = quiz.steps?.findIndex(step => step.id === active.id) ?? -1;
+      const newIndex = quiz.steps?.findIndex(step => step.id === over.id) ?? -1;
+      
+      if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+        handleStepReorder(oldIndex, newIndex);
+      }
+    }
+  };
+
   const updateStage = useCallback((updates: Partial<QuizStep>) => {
     if (!currentStage) return;
     
@@ -604,6 +700,7 @@ export function VisualEditor({
       sensors={sensors} 
       onDragStart={handleDragStart} 
       onDragEnd={handleDragEnd}
+      collisionDetection={closestCenter}
     >
       <div className="h-screen flex flex-col bg-background">
         {/* Toolbar */}
@@ -627,16 +724,22 @@ export function VisualEditor({
             {/* Left Panel - Steps & Components */}
             <ResizablePanel defaultSize={25} minSize={20} maxSize={35}>
               <div className="h-full border-r bg-muted/30 flex flex-col">
-                <div className="p-3 border-b">
-                  <StepManager
-                    steps={quiz.steps || []}
-                    activeStepId={activeStepId}
-                    onStepSelect={setActiveStepId}
-                    onStepAdd={handleStepAdd}
-                    onStepUpdate={handleStepUpdate}
-                    onStepDelete={handleStepDelete}
-                  />
-                </div>
+                <SortableContext 
+                  items={quiz.steps?.map(step => step.id) || []} 
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="p-3 border-b">
+                    <StepManager
+                      steps={quiz.steps || []}
+                      activeStepId={activeStepId}
+                      onStepSelect={setActiveStepId}
+                      onStepAdd={handleStepAdd}
+                      onStepUpdate={handleStepUpdate}
+                      onStepDelete={handleStepDelete}
+                      onStepReorder={handleStepReorder}
+                    />
+                  </div>
+                </SortableContext>
                 <div className="flex-1 overflow-hidden">
                   <ComponentLibrary onAddComponent={addComponent} />
                 </div>
@@ -676,7 +779,7 @@ export function VisualEditor({
 
       <DragOverlay dropAnimation={{ duration: 150, easing: 'ease-out' }}>
         {draggedComponent && (
-          <div className="bg-primary text-primary-foreground px-4 py-3 rounded-lg shadow-2xl border-2 border-primary-foreground/20 backdrop-blur-sm">
+          <div className="bg-primary text-primary-foreground px-4 py-3 rounded-lg shadow-2xl border-2 border-primary-foreground/20 backdrop-blur-sm transform -translate-x-1/2 -translate-y-1/2">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-primary-foreground/20 flex items-center justify-center">
                 <div className="w-4 h-4 bg-primary-foreground rounded" />

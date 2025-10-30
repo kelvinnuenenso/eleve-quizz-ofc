@@ -1,20 +1,55 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Auth() {
   const { user, loading, signIn, signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string>('');
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+
+  // Safety timeout for loading state
+  useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    if (loading) {
+      timeoutId = setTimeout(() => {
+        console.warn('Auth page: Loading timeout reached');
+        setLoadingTimeout(true);
+      }, 10000); // 10 seconds timeout
+    }
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [loading]);
+
+  // Check for error messages in URL parameters
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const error = searchParams.get('error');
+    const errorDescription = searchParams.get('error_description');
+    
+    if (error) {
+      toast({
+        title: "Erro de autenticação",
+        description: errorDescription || error,
+        variant: "destructive",
+      });
+    }
+  }, [location, toast]);
 
   useEffect(() => {
     if (user) {
@@ -25,6 +60,7 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthLoading(true);
+    setDebugInfo('');
     
     try {
       let result;
@@ -35,6 +71,9 @@ export default function Auth() {
       }
       
       if (result.error) {
+        console.error('Auth error:', result.error);
+        setDebugInfo(`Error code: ${result.error.code || 'unknown'}, Message: ${result.error.message}`);
+        
         toast({
           title: "Erro na autenticação",
           description: result.error.message || "Não foi possível completar a operação.",
@@ -54,7 +93,10 @@ export default function Auth() {
           navigate('/app');
         }
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Auth exception:', error);
+      setDebugInfo(`Exception: ${error.message || error}`);
+      
       toast({
         title: "Erro na autenticação",
         description: "Não foi possível completar a operação. Tente novamente.",
@@ -67,16 +109,23 @@ export default function Auth() {
 
   const handleGoogleLogin = async () => {
     setAuthLoading(true);
+    setDebugInfo('');
     try {
       const { error } = await signInWithGoogle();
       if (error) {
+        console.error('Google login error:', error);
+        setDebugInfo(`Google error code: ${error.code || 'unknown'}, Message: ${error.message}`);
+        
         toast({
           title: "Erro no login com Google",
           description: error.message || "Não foi possível fazer login com Google.",
           variant: "destructive",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Google login exception:', error);
+      setDebugInfo(`Google exception: ${error.message || error}`);
+      
       toast({
         title: "Erro no login com Google",
         description: "Não foi possível fazer login com Google. Tente novamente.",
@@ -87,10 +136,70 @@ export default function Auth() {
     }
   };
 
-  if (loading) {
+  const testSupabaseConnection = async () => {
+    try {
+      const { data, error } = await supabase.from('user_profiles').select('count');
+      if (error) {
+        setDebugInfo(`Supabase connection test failed: ${error.message}`);
+      } else {
+        setDebugInfo('Supabase connection test successful');
+      }
+    } catch (error: any) {
+      setDebugInfo(`Supabase connection test error: ${error.message || error}`);
+    }
+  };
+
+  if (loading && !loadingTimeout) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted">
-        <div className="animate-pulse">Carregando...</div>
+        <div className="text-center space-y-4">
+          <div className="animate-pulse text-lg">Carregando...</div>
+          <p className="text-sm text-muted-foreground">Verificando autentica\u00e7\u00e3o...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  if (loadingTimeout) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-muted p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center">\u26a0\ufe0f Tempo esgotado</CardTitle>
+            <CardDescription className="text-center">
+              A verifica\u00e7\u00e3o de autentica\u00e7\u00e3o est\u00e1 demorando mais que o esperado.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground text-center">
+              Isso pode acontecer devido a problemas de conex\u00e3o. Voc\u00ea pode:
+            </p>
+            <div className="space-y-2">
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="w-full"
+                variant="default"
+              >
+                Recarregar P\u00e1gina
+              </Button>
+              <Button 
+                onClick={() => {
+                  setLoadingTimeout(false);
+                  navigate('/auth');
+                }} 
+                className="w-full"
+                variant="outline"
+              >
+                Tentar Fazer Login
+              </Button>
+            </div>
+            {debugInfo && (
+              <div className="text-xs p-3 bg-yellow-50 border border-yellow-200 rounded">
+                <strong>Debug:</strong> {debugInfo}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -190,6 +299,33 @@ export default function Auth() {
               {isSignUp 
                 ? 'Já tem uma conta? Faça login' 
                 : 'Não tem conta? Cadastre-se'}
+            </Button>
+          </div>
+
+          {/* Debug section */}
+          {debugInfo && (
+            <div className="text-xs p-3 bg-yellow-50 border border-yellow-200 rounded">
+              <strong>Debug:</strong> {debugInfo}
+            </div>
+          )}
+
+          <div className="text-center">
+            <Button
+              variant="link"
+              onClick={testSupabaseConnection}
+              className="text-xs text-muted-foreground"
+            >
+              Testar conexão com Supabase
+            </Button>
+          </div>
+
+          <div className="text-center">
+            <Button
+              variant="link"
+              onClick={() => navigate('/app/auth-test')}
+              className="text-xs text-muted-foreground"
+            >
+              Run Authentication Tests
             </Button>
           </div>
 

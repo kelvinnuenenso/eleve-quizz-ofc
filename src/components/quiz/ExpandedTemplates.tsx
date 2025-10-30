@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlanBadge } from '@/components/PlanBadge';
+
 import { 
   expandedTemplates, 
   templateCategories, 
@@ -325,9 +325,7 @@ const ExpandedTemplates = ({ onSelectTemplate }: ExpandedTemplatesProps) => {
             <p className="text-muted-foreground">
               Templates avançados com recursos profissionais
             </p>
-            <div className="mt-4">
-              <PlanBadge plan="premium" size="lg" />
-            </div>
+
           </div>
           
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">

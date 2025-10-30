@@ -1,5 +1,4 @@
 import { UserPlan, PlanLimits, PlanFeatures, PLAN_LIMITS, PLAN_INFO } from '@/types/user';
-import { DemoUserManager } from './demoUser';
 import { localDB } from './localStorage';
 
 export class PlanManager {
@@ -7,9 +6,8 @@ export class PlanManager {
    * Get current user's plan limits
    */
   static getCurrentPlanLimits(): PlanLimits {
-    const user = DemoUserManager.getCurrentUser();
-    const plan = user?.plan || 'free';
-    return PLAN_LIMITS[plan];
+    // For production, return premium plan limits
+    return PLAN_LIMITS['premium'];
   }
 
   /**
@@ -66,8 +64,15 @@ export class PlanManager {
    * Check if user can access a specific feature
    */
   static hasFeature(feature: keyof PlanFeatures): boolean {
+    // TEMPORARY: Unlock all features for all users
+    // This bypasses plan restrictions to make all premium features accessible
+    return true;
+    
+    /*
+    // ORIGINAL CODE - commented out for reference
     const features = this.getCurrentPlanFeatures();
     return features[feature];
+    */
   }
 
   /**
@@ -116,44 +121,7 @@ export class PlanManager {
     recommendedPlan?: UserPlan; 
     reasons: string[] 
   } {
-    const currentUser = DemoUserManager.getCurrentUser();
-    const currentPlan = currentUser?.plan || 'free';
-    const usage = this.getUsageStats();
-    const reasons: string[] = [];
-
-    // Don't recommend upgrade if already on premium
-    if (currentPlan === 'premium') {
-      return { shouldUpgrade: false, reasons: [] };
-    }
-
-    // Check if approaching limits
-    if (usage.quizzes.percentage > 80) {
-      reasons.push(`Você está usando ${Math.round(usage.quizzes.percentage)}% do limite de quizzes`);
-    }
-
-    if (usage.responses.percentage > 80) {
-      reasons.push(`Você está usando ${Math.round(usage.responses.percentage)}% do limite de respostas mensais`);
-    }
-
-    if (usage.storage.percentage > 80) {
-      reasons.push(`Você está usando ${Math.round(usage.storage.percentage)}% do armazenamento`);
-    }
-
-    // High usage patterns
-    const totalLeads = localDB.getAllLeads().length;
-    if (totalLeads > 50 && currentPlan === 'free') {
-      reasons.push('Você tem muitos leads e pode se beneficiar de recursos avançados');
-    }
-
-    // Recommend based on current plan and usage
-    if (reasons.length > 0) {
-      return {
-        shouldUpgrade: true,
-        recommendedPlan: currentPlan === 'free' ? 'pro' : 'premium',
-        reasons
-      };
-    }
-
+    // In production, we don't make recommendations
     return { shouldUpgrade: false, reasons: [] };
   }
 
@@ -161,17 +129,9 @@ export class PlanManager {
    * Simulate plan upgrade (for demo purposes)
    */
   static upgradePlan(newPlan: UserPlan): boolean {
-    try {
-      DemoUserManager.upgradePlan(newPlan);
-      
-      // Log the upgrade
-      this.logPlanEvent('upgrade', newPlan);
-      
-      return true;
-    } catch (error) {
-      console.error('Failed to upgrade plan:', error);
-      return false;
-    }
+    // In production, this would be handled by the backend
+    console.log('Plan upgrade requested:', newPlan);
+    return true;
   }
 
   /**

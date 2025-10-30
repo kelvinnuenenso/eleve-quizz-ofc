@@ -51,11 +51,7 @@ http://localhost:8080
 - Vai direto para `/app` (dashboard)
 - Modo teste - sem necessidade de login
 
-### 3. Clique em "Ver Demonstração"  
-- Abre `/q/demo` (quiz de exemplo)
-- Quiz pré-carregado com 4 perguntas
-
-### 4. Crie Seu Primeiro Quiz
+### 3. Crie Seu Primeiro Quiz
 1. No dashboard, clique **"Novo Quiz"**
 2. Use o **Editor Visual** para personalizar
 3. Adicione perguntas e opções
@@ -73,7 +69,7 @@ src/
 │   ├── flags.ts           # Feature flags (TEST_MODE)
 │   ├── testStore.ts       # Storage local (localStorage)
 │   ├── quizzes.ts         # Repository abstraction layer
-│   └── seed.ts            # Dados iniciais (quiz demo)
+│   └── seed.ts            # Dados iniciais
 ├── pages/                 # Páginas principais
 │   ├── Index.tsx          # Landing page
 │   ├── Dashboard.tsx      # /app - Lista de quizzes

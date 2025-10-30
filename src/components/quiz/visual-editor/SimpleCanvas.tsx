@@ -70,14 +70,14 @@ export function SimpleCanvas({
         </p>
       </div>
 
-      {/* Canvas Content - TODA a área é uma zona de drop */}
+      {/* Canvas Content - ALL area is a drop zone */}
       <div 
         ref={setNodeRef}
         className={`flex-1 overflow-auto transition-all duration-300 relative ${
           isOver ? 'bg-primary/5' : ''
         }`}
       >
-        {/* Drop overlay para toda a área */}
+        {/* Drop overlay for the entire area */}
         {isOver && (
           <div className="absolute inset-0 bg-primary/10 border-2 border-primary border-dashed animate-pulse z-50 pointer-events-none">
             <div className="h-full flex items-center justify-center">
@@ -99,7 +99,7 @@ export function SimpleCanvas({
                   <div>
                     <h3 className="font-semibold">Página em branco</h3>
                     <p className="text-muted-foreground text-sm mt-1">
-                      Arraste componentes da biblioteca ou clique neles para adicionar
+                      Arraste componentes da biblioteca para adicionar
                     </p>
                     <p className="text-xs text-muted-foreground mt-2 max-w-md mx-auto">
                       💡 Dica: Comece com um título e depois adicione outros elementos. Use drag & drop para reorganizar.

@@ -1,44 +1,60 @@
-// Service Worker for PWA functionality
-const CACHE_NAME = 'elevado-quizz-v1';
-const STATIC_CACHE = 'elevado-static-v1';
-const DYNAMIC_CACHE = 'elevado-dynamic-v1';
+// Service Worker Otimizado - Elevado Quizz v3.1
+const CACHE_VERSION = 'v3.1';
+const STATIC_CACHE = `elevado-static-${CACHE_VERSION}`;
+const DYNAMIC_CACHE = `elevado-dynamic-${CACHE_VERSION}`;
+const VENDOR_CACHE = `elevado-vendor-${CACHE_VERSION}`;
 
-// Files to cache immediately
+// Arquivos estáticos críticos (HTML, CSS)
 const STATIC_FILES = [
   '/',
-  '/app',
   '/manifest.json',
-  '/static/css/main.css',
-  '/static/js/main.js',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'
 ];
 
-// Install event - cache static files
+// Padrões de vendor chunks (cache permanente)
+const VENDOR_PATTERNS = [
+  /vendor-react.*\.js$/,
+  /vendor-ui.*\.js$/,
+  /vendor-motion.*\.js$/,
+  /vendor-utils.*\.js$/,
+];
+
+// Padrões de assets (imagens, fonts)
+const ASSET_PATTERNS = [
+  /\.(png|jpg|jpeg|svg|gif|webp|ico)$/,
+  /fonts\.googleapis\.com/,
+  /fonts\.gstatic\.com/,
+];
+
+// Install event - preparar caches
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Service Worker');
+  console.log(`[SW v${CACHE_VERSION}] Installing...`);
+  
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
-        console.log('[SW] Caching static files');
+        console.log('[SW] Pre-caching static files');
         return cache.addAll(STATIC_FILES);
       })
       .catch((error) => {
-        console.log('[SW] Failed to cache static files:', error);
+        console.warn('[SW] Failed to pre-cache:', error);
       })
   );
-  // Force the waiting service worker to become the active service worker
+  
+  // Ativar imediatamente
   self.skipWaiting();
 });
 
-// Activate event - clean up old caches
+// Activate event - limpar caches antigos
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating Service Worker');
+  console.log(`[SW v${CACHE_VERSION}] Activating...`);
+  
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
           .filter((cacheName) => {
-            return cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE;
+            // Manter apenas caches da versão atual
+            return !cacheName.includes(CACHE_VERSION);
           })
           .map((cacheName) => {
             console.log('[SW] Deleting old cache:', cacheName);
@@ -47,108 +63,188 @@ self.addEventListener('activate', (event) => {
       );
     })
   );
-  // Ensure the service worker takes control immediately
+  
+  // Assumir controle imediatamente
   self.clients.claim();
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - estratégia de cache otimizada
 self.addEventListener('fetch', (event) => {
   const { request } = event;
+  const url = new URL(request.url);
   
   // Skip non-GET requests
   if (request.method !== 'GET') return;
   
-  // Skip external requests (except fonts)
-  if (!request.url.startsWith(self.location.origin) && 
-      !request.url.includes('fonts.googleapis.com') &&
-      !request.url.includes('fonts.gstatic.com')) {
-    return;
-  }
-
+  // Skip Supabase API requests (sempre buscar fresh data)
+  if (url.hostname.includes('supabase.co')) return;
+  
   event.respondWith(
-    caches.match(request)
-      .then((cachedResponse) => {
-        // Return cached version if available
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        
-        // Otherwise fetch from network
-        return fetch(request)
-          .then((networkResponse) => {
-            // Don't cache if not successful
-            if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-              return networkResponse;
-            }
-            
-            // Clone the response because it can only be consumed once
-            const responseToCache = networkResponse.clone();
-            
-            // Cache dynamic content
-            caches.open(DYNAMIC_CACHE)
-              .then((cache) => {
-                cache.put(request, responseToCache);
-              });
-            
-            return networkResponse;
-          })
-          .catch(() => {
-            // Return offline fallback for navigations
-            if (request.mode === 'navigate') {
-              return caches.match('/offline.html') || new Response(
-                `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                  <title>Offline - Elevado Quizz</title>
-                  <meta name="viewport" content="width=device-width, initial-scale=1">
-                  <style>
-                    body { 
-                      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                      display: flex; 
-                      align-items: center; 
-                      justify-content: center; 
-                      min-height: 100vh; 
-                      margin: 0;
-                      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                      color: white;
-                      text-align: center;
-                      padding: 20px;
-                    }
-                    .container { max-width: 400px; }
-                    h1 { margin-bottom: 1rem; }
-                    button {
-                      background: white;
-                      color: #667eea;
-                      border: none;
-                      padding: 12px 24px;
-                      border-radius: 6px;
-                      cursor: pointer;
-                      font-weight: 600;
-                      margin-top: 1rem;
-                    }
-                  </style>
-                </head>
-                <body>
-                  <div class="container">
-                    <h1>📱 Você está offline</h1>
-                    <p>Parece que você perdeu a conexão com a internet. Verifique sua conexão e tente novamente.</p>
-                    <button onclick="window.location.reload()">Tentar novamente</button>
-                  </div>
-                </body>
-                </html>
-                `,
-                {
-                  headers: {
-                    'Content-Type': 'text/html'
-                  }
-                }
-              );
-            }
-          });
-      })
+    handleFetch(request)
   );
 });
+
+async function handleFetch(request) {
+  const url = new URL(request.url);
+  
+  // Ignore chrome-extension and other unsupported schemes
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return fetch(request);
+  }
+  
+  // Estratégia 1: Vendor chunks - Cache First (permanente)
+  if (VENDOR_PATTERNS.some(pattern => pattern.test(url.pathname))) {
+    return cacheFirst(request, VENDOR_CACHE);
+  }
+  
+  // Estratégia 2: Assets (images, fonts) - Cache First
+  if (ASSET_PATTERNS.some(pattern => pattern.test(url.href))) {
+    return cacheFirst(request, DYNAMIC_CACHE);
+  }
+  
+  // Estratégia 3: HTML, CSS, JS - Network First com fallback
+  if (url.pathname.endsWith('.html') || 
+      url.pathname.endsWith('.css') || 
+      url.pathname.endsWith('.js') ||
+      url.pathname === '/') {
+    return networkFirst(request, DYNAMIC_CACHE);
+  }
+  
+  // Estratégia 4: Tudo mais - Network First
+  return networkFirst(request, DYNAMIC_CACHE);
+}
+
+// Cache First: Tenta cache, depois network
+async function cacheFirst(request, cacheName) {
+  // Ignore chrome-extension and other unsupported schemes
+  const url = new URL(request.url);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return fetch(request);
+  }
+  
+  const cached = await caches.match(request);
+  if (cached) {
+    return cached;
+  }
+  
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(cacheName);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    console.warn('[SW] Fetch failed:', error);
+    return new Response('Offline', { status: 503 });
+  }
+}
+
+// Network First: Tenta network, fallback para cache
+async function networkFirst(request, cacheName) {
+  // Ignore chrome-extension and other unsupported schemes
+  const url = new URL(request.url);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return fetch(request);
+  }
+  
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(cacheName);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    const cached = await caches.match(request);
+    if (cached) {
+      return cached;
+    }
+    
+    // Fallback offline para navegação
+    if (request.mode === 'navigate') {
+      return getOfflinePage();
+    }
+    
+    throw error;
+  }
+}
+
+// Página offline
+function getOfflinePage() {
+  return new Response(
+    `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Offline - Elevado Quizz</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+          font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          min-height: 100vh; 
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          text-align: center;
+          padding: 20px;
+        }
+        .container { 
+          max-width: 500px;
+          background: rgba(255,255,255,0.1);
+          backdrop-filter: blur(10px);
+          padding: 40px;
+          border-radius: 20px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+        }
+        h1 { 
+          font-size: 3rem; 
+          margin-bottom: 1rem;
+        }
+        p { 
+          font-size: 1.1rem; 
+          line-height: 1.6;
+          margin-bottom: 2rem;
+          opacity: 0.95;
+        }
+        button {
+          background: white;
+          color: #667eea;
+          border: none;
+          padding: 14px 32px;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 1rem;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>📱</h1>
+        <h2>Você está offline</h2>
+        <p>Parece que você perdeu a conexão com a internet. Verifique sua conexão e tente novamente.</p>
+        <button onclick="window.location.reload()">🔄 Tentar novamente</button>
+      </div>
+    </body>
+    </html>
+    `,
+    {
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8'
+      }
+    }
+  );
+}
 
 // Background sync for form submissions
 self.addEventListener('sync', (event) => {

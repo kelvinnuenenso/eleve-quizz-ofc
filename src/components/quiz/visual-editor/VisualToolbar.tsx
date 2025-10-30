@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Quiz } from '@/types/quiz';
-import { Save, Eye, Undo2, Redo2, RefreshCw } from 'lucide-react';
+import { Save, Eye, Undo2, Redo2, RefreshCw, Upload } from 'lucide-react';
 
 interface VisualToolbarProps {
   quiz: Quiz;
@@ -17,6 +17,7 @@ interface VisualToolbarProps {
   onUndo: () => void;
   onRedo: () => void;
   onSyncWithQuestions?: () => void;
+  onPublish?: () => void;
 }
 
 export function VisualToolbar({
@@ -31,7 +32,8 @@ export function VisualToolbar({
   onPreview,
   onUndo,
   onRedo,
-  onSyncWithQuestions
+  onSyncWithQuestions,
+  onPublish
 }: VisualToolbarProps) {
   return (
     <div className="border-b bg-card p-4">
@@ -44,11 +46,11 @@ export function VisualToolbar({
               className="text-lg font-semibold bg-transparent border-none px-0 focus-visible:ring-0" 
               placeholder="Nome do projeto"
             />
-            <p className="text-sm text-muted-foreground">
-              {componentCount} componentes na página
-              {autoSaving && " • Salvando automaticamente..."}
-              {!autoSaving && !isDirty && " • Todas as alterações salvas"}
-            </p>
+            {quiz.description && (
+              <p className="text-sm text-muted-foreground mt-1 truncate">
+                {quiz.description}
+              </p>
+            )}
           </div>
           
           <Badge variant={quiz.status === 'published' ? 'default' : 'secondary'}>
@@ -104,6 +106,18 @@ export function VisualToolbar({
             <Save className="w-4 h-4 mr-2" />
             {autoSaving ? 'Salvando...' : 'Salvar'}
           </Button>
+          
+          {onPublish && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={onPublish}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Publicar
+            </Button>
+          )}
           
           <Button
             variant="default"

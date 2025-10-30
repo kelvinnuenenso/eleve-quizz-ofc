@@ -57,27 +57,35 @@ function ComponentItem({ type, label, description, icon, category, onAddComponen
       type,
       label,
       description,
-      category
+      category,
+      // Add a flag to indicate this is from the library
+      isFromLibrary: true
     }
   });
 
-  const style = transform ? {
+  // Use fixed positioning when dragging to escape the overflow container
+  const style: React.CSSProperties = isDragging ? {
+    position: 'fixed',
+    top: transform ? transform.y : 0,
+    left: transform ? transform.x : 0,
+    transform: 'none',
+    zIndex: 10000,
+    width: '280px', // Approximate width of the component card
+    pointerEvents: 'none' as React.CSSProperties['pointerEvents'],
+  } : transform ? {
     transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
     zIndex: 1000,
-  } : undefined;
+  } : {};
 
   const handleClick = (e: React.MouseEvent) => {
-    // Só adiciona componente se não estiver sendo arrastado
-    if (!isDragging && onAddComponent) {
-      e.stopPropagation();
-      onAddComponent(type);
-      setIsClicked(true);
-      setTimeout(() => setIsClicked(false), 200);
-    }
+    // Prevent adding component on click - only allow drag and drop
+    e.stopPropagation();
+    // Remove the previous functionality that added components on click
+    // This will make the click behavior do nothing
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    // Previne seleção de texto durante drag
+    // Prevent text selection during drag
     e.preventDefault();
   };
 
@@ -92,7 +100,7 @@ function ComponentItem({ type, label, description, icon, category, onAddComponen
       className={`
         p-3 select-none transition-all duration-200 border-2 group relative
         ${isDragging 
-          ? 'opacity-80 shadow-2xl border-primary bg-primary/20 scale-105 cursor-grabbing z-50' 
+          ? 'opacity-80 shadow-2xl border-primary bg-primary/20 scale-105 cursor-grabbing' 
           : 'cursor-grab hover:cursor-grab border-transparent hover:border-primary/30 hover:bg-muted/50 active:scale-98'
         }
         ${isClicked ? 'border-primary bg-primary/10 scale-95' : ''}
@@ -120,7 +128,7 @@ function ComponentItem({ type, label, description, icon, category, onAddComponen
         </div>
       </div>
       
-      {/* Indicador visual durante drag */}
+      {/* Visual indicator during drag */}
       {isDragging && (
         <div className="absolute inset-0 bg-primary/10 rounded-lg border-2 border-primary border-dashed animate-pulse" />
       )}
@@ -290,6 +298,23 @@ export function ComponentLibrary({ onAddComponent }: ComponentLibraryProps) {
     return matchesCategory && matchesSearch;
   });
 
+  // Prevent scroll during drag operations
+  const handleDragStart = () => {
+    // Disable scroll on the scroll area during drag
+    const scrollArea = document.querySelector('.scroll-area-component-library');
+    if (scrollArea) {
+      (scrollArea as HTMLElement).style.overflow = 'hidden';
+    }
+  };
+
+  const handleDragEnd = () => {
+    // Re-enable scroll after drag
+    const scrollArea = document.querySelector('.scroll-area-component-library');
+    if (scrollArea) {
+      (scrollArea as HTMLElement).style.overflow = 'auto';
+    }
+  };
+
   return (
     <div className="flex flex-col w-full bg-background">
       {/* Header sempre visível */}
@@ -339,7 +364,7 @@ export function ComponentLibrary({ onAddComponent }: ComponentLibraryProps) {
 
       {/* Lista de Componentes - área principal com scroll dinâmico */}
       <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-[60vh] min-h-[400px]">
+        <ScrollArea className="h-[60vh] min-h-[400px] scroll-area-component-library">
           <div className="p-4 space-y-3">
             {filteredComponents.length > 0 ? (
               <>

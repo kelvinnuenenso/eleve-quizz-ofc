@@ -1,15 +1,17 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from '@/components/ui/badge';
 import { LoadingState } from '@/components/LoadingSpinner';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { listQuizzes, saveQuiz } from '@/lib/quizzes';
 import { localDB } from '@/lib/localStorage';
 import { useAuth } from '@/hooks/useAuth';
 import { Quiz } from '@/types/quiz';
+import { generateUniquePublicId } from '@/lib/supabaseQuiz';
 import {
   Plus,
   BarChart3,
@@ -36,6 +38,8 @@ import { CohortAnalysis } from '@/components/analytics/CohortAnalysis';
 import { AchievementSystem } from '@/components/gamification/AchievementSystem';
 import LeadsManager from '@/components/quiz/LeadsManager';
 import { WebhookManager } from '@/components/integrations/WebhookManager';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { IntegrationTest } from '@/components/IntegrationTest';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -45,6 +49,12 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [showImporter, setShowImporter] = useState(false);
+  // State for inline editing
+  const [editingQuizId, setEditingQuizId] = useState<string | null>(null);
+  const [editingField, setEditingField] = useState<'name' | 'description' | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const editInputRef = useRef<HTMLInputElement>(null);
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     loadQuizzes();
@@ -66,7 +76,7 @@ const Dashboard = () => {
     try {
       const newQuiz: Quiz = {
         id: crypto.randomUUID(),
-        publicId: Math.random().toString(36).slice(2, 8),
+        publicId: await generateUniquePublicId('Novo Quiz'),
         name: 'Novo Quiz',
         description: 'Descreva seu quiz aqui...',
         status: 'draft',
@@ -112,10 +122,8 @@ const Dashboard = () => {
       
       toast({
         title: "Quiz criado com sucesso!",
-        description: "Você pode começar a editá-lo agora."
+        description: "Clique no nome do quiz para editá-lo."
       });
-
-      navigate(`/app/edit/${newQuiz.id}`);
     } catch (error) {
       console.error('Error creating quiz:', error);
       toast({
@@ -161,6 +169,48 @@ const Dashboard = () => {
     }
   };
 
+  // Functions for inline editing
+  const startEditing = (quiz: Quiz, field: 'name' | 'description') => {
+    setEditingQuizId(quiz.id);
+    setEditingField(field);
+    setEditValue(field === 'name' ? quiz.name : (quiz.description || ''));
+  };
+
+  const saveEditing = async () => {
+    if (!editingQuizId || !editingField) return;
+    
+    try {
+      const quizToUpdate = quizzes.find(q => q.id === editingQuizId);
+      if (!quizToUpdate) return;
+
+      const updatedQuiz = {
+        ...quizToUpdate,
+        name: editingField === 'name' ? editValue : quizToUpdate.name,
+        description: editingField === 'description' ? editValue : (quizToUpdate.description || ''),
+        updatedAt: new Date().toISOString()
+      };
+
+      await saveQuiz(updatedQuiz);
+      setQuizzes(quizzes.map(q => q.id === editingQuizId ? updatedQuiz : q));
+      
+      toast({
+        title: "Quiz atualizado",
+        description: "As informações do quiz foram salvas com sucesso."
+      });
+    } catch (error) {
+      console.error('Error updating quiz:', error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível salvar as alterações. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setEditingQuizId(null);
+      setEditingField(null);
+      setEditValue('');
+    }
+  };
+
   const handleImportQuiz = async (quiz: Quiz) => {
     try {
       await saveQuiz(quiz);
@@ -182,15 +232,25 @@ const Dashboard = () => {
     }
   };
 
+  useEffect(() => {
+    // Focus the input/textarea when editing starts
+    if (editingQuizId && editInputRef.current) {
+      editInputRef.current.focus();
+    }
+    if (editingQuizId && editingField === 'description' && editTextareaRef.current) {
+      editTextareaRef.current.focus();
+    }
+  }, [editingQuizId, editingField]);
+
   if (loading) {
     return <LoadingState message="Carregando seus quizzes..." fullScreen />;
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-card border-b">
-        <div className="container mx-auto px-4 py-6">
+        <div className="px-4 py-6 max-w-[90vw] mx-auto">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
@@ -199,6 +259,7 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <ThemeToggle />
               <span className="text-muted-foreground">
                 Olá, {user?.user_metadata?.full_name || user?.email}
               </span>
@@ -219,10 +280,10 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="px-4 py-8 max-w-[90vw] mx-auto">
         {/* Stats Overview */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card className="p-6">
+          <Card className="p-6 bg-card border">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Total de Quizzes</p>
@@ -232,7 +293,7 @@ const Dashboard = () => {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 bg-card border">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Respostas</p>
@@ -244,7 +305,7 @@ const Dashboard = () => {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 bg-card border">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Leads Capturados</p>
@@ -256,7 +317,7 @@ const Dashboard = () => {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-6 bg-card border">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Taxa Conversão</p>
@@ -273,7 +334,7 @@ const Dashboard = () => {
 
         {/* Main Dashboard Content */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-6 bg-muted">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="leads">Leads</TabsTrigger>
@@ -309,7 +370,7 @@ const Dashboard = () => {
             </div>
 
             {quizzes.length === 0 ? (
-              <Card className="p-12 text-center">
+              <Card className="p-12 text-center bg-card border">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <BarChart3 className="w-8 h-8 text-blue-600" />
                 </div>
@@ -325,11 +386,37 @@ const Dashboard = () => {
             ) : (
               <div className="grid gap-6">
                 {quizzes.map((quiz) => (
-                  <Card key={quiz.id} className="p-6 hover:shadow-md transition-shadow">
+                  <Card key={quiz.id} className="p-6 hover:shadow-md transition-shadow bg-card border">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-semibold">{quiz.name}</h3>
+                          {editingQuizId === quiz.id && editingField === 'name' ? (
+                            <Input
+                              ref={editInputRef}
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={saveEditing}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  saveEditing();
+                                } else if (e.key === 'Escape') {
+                                  setEditingQuizId(null);
+                                  setEditingField(null);
+                                  setEditValue('');
+                                }
+                              }}
+                              className="text-xl font-semibold"
+                              placeholder="Nome do quiz"
+                            />
+                          ) : (
+                            <h3 
+                              className="text-xl font-semibold cursor-pointer hover:underline"
+                              onClick={() => startEditing(quiz, 'name')}
+                            >
+                              {quiz.name}
+                            </h3>
+                          )}
                           <Badge 
                             variant={quiz.status === 'published' ? 'default' : 'secondary'}
                             className={quiz.status === 'published' ? 'bg-green-100 text-green-800' : ''}
@@ -338,8 +425,33 @@ const Dashboard = () => {
                           </Badge>
                         </div>
                         
-                        {quiz.description && (
-                          <p className="text-muted-foreground mb-4">{quiz.description}</p>
+                        {editingQuizId === quiz.id && editingField === 'description' ? (
+                          <Textarea
+                            ref={editTextareaRef}
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={saveEditing}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                saveEditing();
+                              } else if (e.key === 'Escape') {
+                                setEditingQuizId(null);
+                                setEditingField(null);
+                                setEditValue('');
+                              }
+                            }}
+                            placeholder="Descrição do quiz"
+                            rows={2}
+                            className="mb-4"
+                          />
+                        ) : (
+                          <p 
+                            className="text-muted-foreground mb-4 cursor-pointer hover:underline"
+                            onClick={() => startEditing(quiz, 'description')}
+                          >
+                            {quiz.description || 'Clique para adicionar descrição...'}
+                          </p>
                         )}
 
                         <div className="flex items-center gap-6 text-sm text-muted-foreground">
@@ -356,8 +468,8 @@ const Dashboard = () => {
                           size="sm"
                           onClick={() => navigate(`/app/edit/${quiz.id}`)}
                         >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Editar
+                          <MousePointer className="w-4 h-4 mr-1" />
+                          Abrir
                         </Button>
 
                         {quiz.status === 'published' && (
@@ -397,32 +509,62 @@ const Dashboard = () => {
               </TabsList>
               
               <TabsContent value="heatmap">
-                <HeatmapAnalytics quizId={quizzes[0]?.id || 'demo'} />
+                {quizzes.length > 0 ? (
+                  <HeatmapAnalytics quizId={quizzes[0].id} />
+                ) : (
+                  <div className="text-center p-8 text-muted-foreground">
+                    <BarChart3 className="w-12 h-12 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Nenhum quiz disponível</h3>
+                    <p>Crie seu primeiro quiz para visualizar análises</p>
+                  </div>
+                )}
               </TabsContent>
               
               <TabsContent value="abtest">
-                <ABTestingManager quizId={quizzes[0]?.id || 'demo'} />
+                {quizzes.length > 0 ? (
+                  <ABTestingManager quizId={quizzes[0].id} />
+                ) : (
+                  <div className="text-center p-8 text-muted-foreground">
+                    <Target className="w-12 h-12 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Nenhum quiz disponível</h3>
+                    <p>Crie seu primeiro quiz para configurar testes A/B</p>
+                  </div>
+                )}
               </TabsContent>
               
               <TabsContent value="cohort">
-                <CohortAnalysis quizId={quizzes[0]?.id || 'demo'} />
+                {quizzes.length > 0 ? (
+                  <CohortAnalysis quizId={quizzes[0].id} />
+                ) : (
+                  <div className="text-center p-8 text-muted-foreground">
+                    <Users className="w-12 h-12 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Nenhum quiz disponível</h3>
+                    <p>Crie seu primeiro quiz para analisar coortes</p>
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </TabsContent>
 
           <TabsContent value="leads" className="space-y-6">
-            <LeadsManager quizId={quizzes[0]?.id || 'demo'} />
+            {quizzes.length > 0 ? (
+              <LeadsManager quizId={quizzes[0].id} />
+            ) : (
+              <div className="text-center p-8 text-muted-foreground">
+                <Users className="w-12 h-12 mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">Nenhum quiz disponível</h3>
+                <p>Crie seu primeiro quiz para gerenciar leads</p>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="integrations" className="space-y-6">
-            <WebhookManager 
-              quizId={quizzes[0]?.id || 'demo'}
-            />
+            <IntegrationTest />
           </TabsContent>
 
           <TabsContent value="gamification" className="space-y-6">
             <AchievementSystem 
-              userId={user?.id || 'demo-user'} 
+              userId={user?.id || ''} 
               onAchievementUnlocked={(achievement) => {
                 toast({
                   title: "🎉 Nova Conquista!",
@@ -458,7 +600,7 @@ const Dashboard = () => {
             </div>
 
             {quizzes.length === 0 ? (
-              <Card className="p-12 text-center">
+              <Card className="p-12 text-center bg-card border">
                 <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <BarChart3 className="w-8 h-8 text-blue-600" />
                 </div>
@@ -474,11 +616,37 @@ const Dashboard = () => {
             ) : (
               <div className="grid gap-6">
                 {quizzes.map((quiz) => (
-                  <Card key={quiz.id} className="p-6 hover:shadow-md transition-shadow">
+                  <Card key={quiz.id} className="p-6 hover:shadow-md transition-shadow bg-card border">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-semibold">{quiz.name}</h3>
+                          {editingQuizId === quiz.id && editingField === 'name' ? (
+                            <Input
+                              ref={editInputRef}
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              onBlur={saveEditing}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  saveEditing();
+                                } else if (e.key === 'Escape') {
+                                  setEditingQuizId(null);
+                                  setEditingField(null);
+                                  setEditValue('');
+                                }
+                              }}
+                              className="text-xl font-semibold"
+                              placeholder="Nome do quiz"
+                            />
+                          ) : (
+                            <h3 
+                              className="text-xl font-semibold cursor-pointer hover:underline"
+                              onClick={() => startEditing(quiz, 'name')}
+                            >
+                              {quiz.name}
+                            </h3>
+                          )}
                           <Badge 
                             variant={quiz.status === 'published' ? 'default' : 'secondary'}
                             className={quiz.status === 'published' ? 'bg-green-100 text-green-800' : ''}
@@ -487,8 +655,33 @@ const Dashboard = () => {
                           </Badge>
                         </div>
                         
-                        {quiz.description && (
-                          <p className="text-muted-foreground mb-4">{quiz.description}</p>
+                        {editingQuizId === quiz.id && editingField === 'description' ? (
+                          <Textarea
+                            ref={editTextareaRef}
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onBlur={saveEditing}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                saveEditing();
+                              } else if (e.key === 'Escape') {
+                                setEditingQuizId(null);
+                                setEditingField(null);
+                                setEditValue('');
+                              }
+                            }}
+                            placeholder="Descrição do quiz"
+                            rows={2}
+                            className="mb-4"
+                          />
+                        ) : (
+                          <p 
+                            className="text-muted-foreground mb-4 cursor-pointer hover:underline"
+                            onClick={() => startEditing(quiz, 'description')}
+                          >
+                            {quiz.description || 'Clique para adicionar descrição...'}
+                          </p>
                         )}
 
                         <div className="flex items-center gap-6 text-sm text-muted-foreground">
@@ -505,8 +698,8 @@ const Dashboard = () => {
                           size="sm"
                           onClick={() => navigate(`/app/edit/${quiz.id}`)}
                         >
-                          <Edit className="w-4 h-4 mr-1" />
-                          Editar
+                          <MousePointer className="w-4 h-4 mr-1" />
+                          Abrir
                         </Button>
 
                         {quiz.status === 'published' && (

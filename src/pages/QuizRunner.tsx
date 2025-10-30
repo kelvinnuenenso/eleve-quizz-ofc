@@ -1,12 +1,14 @@
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Quiz, QuizAnswer, Result, Lead } from '@/types/quiz';
 import { loadQuizByPublicId, saveResult, saveLead } from '@/lib/quizzes';
+import { supabase } from '@/integrations/supabase/client';
 import { FakeProgressBar } from '@/components/quiz/FakeProgressBar';
 import { Star, ArrowRight, Trophy, Zap, Target } from 'lucide-react';
 import { EnhancedErrorBoundary } from '@/components/EnhancedErrorBoundary';
@@ -21,9 +23,12 @@ import { realAnalytics } from '@/lib/analytics';
 import { realPixelSystem } from '@/lib/pixelSystem';
 import { supabaseSync } from '@/lib/supabaseSync';
 import { webhookSystem } from '@/lib/webhookSystem';
+import { LeadCaptureForm } from '@/components/quiz/LeadCaptureForm';
+import { CustomLeadForm } from '@/components/quiz/CustomLeadForm';
+import { mockQuizData } from '@/lib/mockQuizData';
 
 const QuizRunner = () => {
-  const { publicId } = useParams<{ publicId: string }>();
+  const { publicId, quizId } = useParams<{ publicId?: string; quizId?: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -31,6 +36,7 @@ const QuizRunner = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<QuizAnswer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [stepStartTime, setStepStartTime] = useState<number>(Date.now());
@@ -42,6 +48,10 @@ const QuizRunner = () => {
   const [dataReady, setDataReady] = useState(false);
   const [showGestureHint, setShowGestureHint] = useState(isMobile && !localStorage.getItem('gesture-hint-shown'));
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [leadCaptured, setLeadCaptured] = useState(false);
+
+  // Use quizId or publicId
+  const quizIdentifier = quizId || publicId;
 
 
   // Mobile gestures for navigation
@@ -75,8 +85,279 @@ const QuizRunner = () => {
     }
   }, [currentStep, quiz]);
 
+  // Check for achievements
+  const checkAchievements = (score: number, answers: QuizAnswer[], answerTimes: number[]) => {
+    const totalTime = answerTimes.reduce((sum, time) => sum + time, 0);
+    const avgTimePerQuestion = totalTime / answerTimes.length;
+    
+    const newAchievements: any[] = [];
+    
+    // Perfect Score Achievement
+    if (score >= 100) {
+      newAchievements.push({
+        id: 'perfect_score',
+        title: '⭐ Pontuação Perfeita!',
+        description: 'Você acertou tudo!',
+        points: 500
+      });
+    }
+    
+    // Speed Achievement
+    if (totalTime < 60000) { // Less than 1 minute
+      newAchievements.push({
+        id: 'speed_demon',
+        title: '⚡ Demônio da Velocidade!',
+        description: 'Completou em menos de 1 minuto!',
+        points: 250
+      });
+    }
+    
+    // First Quiz Achievement
+    const existingResults = JSON.parse(localStorage.getItem('quiz_results') || '[]');
+    if (existingResults.length === 0) {
+      newAchievements.push({
+        id: 'first_quiz',
+        title: '🎯 Primeiro Quiz!',
+        description: 'Parabéns por completar seu primeiro quiz!',
+        points: 100
+      });
+    }
+    
+    if (newAchievements.length > 0) {
+      setAchievements(newAchievements);
+      // Show first achievement as popup
+      setShowAchievement(newAchievements[0]);
+      setTimeout(() => setShowAchievement(null), 3000);
+    }
+  };
+
+  // Render individual components
+  const renderComponent = (component: any) => {
+    const { type, content, properties } = component;
+    
+    switch (type) {
+      case 'title':
+        const level = content?.level || 'h2';
+        const TitleTag = level as keyof JSX.IntrinsicElements;
+        return (
+          <TitleTag 
+            className={`font-bold mb-4 ${
+              level === 'h1' ? 'text-3xl md:text-4xl' :
+              level === 'h2' ? 'text-2xl md:text-3xl' :
+              level === 'h3' ? 'text-xl md:text-2xl' : 'text-lg'
+            } text-center`}
+            style={{
+              color: quiz.theme?.text || '#0B0B0B',
+              fontFamily: quiz.theme?.fontFamily || 'Inter, sans-serif'
+            }}
+          >
+            {content?.text || 'Título'}
+          </TitleTag>
+        );
+        
+      case 'text':
+        return (
+          <p 
+            className={`mb-6 ${
+              content?.style === 'subtitle' ? 'text-lg text-muted-foreground' :
+              content?.style === 'small' ? 'text-sm' : 'text-base'
+            } text-center`}
+            style={{
+              color: quiz.theme?.text || '#0B0B0B',
+              fontFamily: quiz.theme?.fontFamily || 'Inter, sans-serif'
+            }}
+          >
+            {content?.text || 'Texto'}
+          </p>
+        );
+        
+      case 'button':
+        return (
+          <div className="flex justify-center mb-6">
+            <Button
+              style={{
+                borderRadius: quiz.theme?.buttonStyle === 'pill' ? '999px' : quiz.theme?.borderRadius || '12px',
+                background: quiz.theme?.gradient 
+                  ? `linear-gradient(135deg, ${quiz.theme?.primary}, ${quiz.theme?.accent})`
+                  : quiz.theme?.primary || '#2563EB',
+                color: quiz.theme?.cardBackground || '#FFFFFF'
+              }}
+              size="lg"
+              className="min-w-[200px] font-semibold"
+            >
+              {content?.text || 'Clique aqui'}
+              {content?.action === 'next' && <ArrowRight className="w-4 h-4 ml-2" />}
+            </Button>
+          </div>
+        );
+        
+      case 'multiple_choice':
+        return (
+          <div className="space-y-4 mb-6">
+            {content?.question && (
+              <h3 
+                className="text-xl font-semibold mb-4 text-center"
+                style={{ color: quiz.theme?.text || '#0B0B0B' }}
+              >
+                {content.question}
+              </h3>
+            )}
+            
+            <div className="space-y-3">
+              {(content?.options || []).map((option: any) => (
+                <Button
+                  key={option.id}
+                  variant="outline"
+                  className="w-full p-4 h-auto text-left justify-start transition-all duration-200"
+                  style={{
+                    borderRadius: quiz.theme?.buttonStyle === 'pill' ? '999px' : quiz.theme?.borderRadius || '12px',
+                    borderColor: quiz.theme?.primary || '#2563EB',
+                    backgroundColor: 'transparent',
+                    color: quiz.theme?.text || '#0B0B0B'
+                  }}
+                  onClick={() => {
+                    if (content?.allowMultiple) {
+                      const newSelection = selectedOptions.includes(option.id)
+                        ? selectedOptions.filter(id => id !== option.id)
+                        : [...selectedOptions, option.id];
+                      setSelectedOptions(newSelection);
+                      
+                      // For multiple choice, we might want to auto-submit or wait for a button
+                      if (!content?.allowMultiple) {
+                        handleAnswer(option.id);
+                      }
+                    } else {
+                      setSelectedOptions([option.id]);
+                      handleAnswer(option.id);
+                    }
+                  }}
+                >
+                  <div className="text-base">{option.label}</div>
+                </Button>
+              ))}
+            </div>
+            
+            {content?.allowMultiple && selectedOptions.length > 0 && (
+              <Button
+                className="w-full mt-4"
+                style={{
+                  borderRadius: quiz.theme?.buttonStyle === 'pill' ? '999px' : quiz.theme?.borderRadius || '12px',
+                  background: quiz.theme?.gradient 
+                    ? `linear-gradient(135deg, ${quiz.theme?.primary}, ${quiz.theme?.accent})`
+                    : quiz.theme?.primary || '#2563EB',
+                  color: quiz.theme?.cardBackground || '#FFFFFF'
+                }}
+                onClick={() => handleAnswer(selectedOptions)}
+              >
+                Continuar ({selectedOptions.length} selecionadas)
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            )}
+          </div>
+        );
+        
+      case 'input':
+        return (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const formData = new FormData(e.currentTarget);
+              const value = formData.get('input') as string;
+              if (value) handleAnswer(value);
+            }}
+            className="space-y-4 mb-6"
+          >
+            {content?.label && (
+              <label 
+                className="block text-sm font-medium text-center mb-2"
+                style={{ color: quiz.theme?.text || '#0B0B0B' }}
+              >
+                {content.label}
+                {content?.required && <span className="text-red-500 ml-1">*</span>}
+              </label>
+            )}
+            
+            {content?.type === 'textarea' ? (
+              <Textarea
+                name="input"
+                placeholder={content?.placeholder || 'Digite sua resposta...'}
+                required={content?.required}
+                className="text-lg py-3 w-full"
+                style={{
+                  borderRadius: quiz.theme?.borderRadius || '8px',
+                  borderColor: quiz.theme?.primary || '#E5E7EB'
+                }}
+                rows={4}
+              />
+            ) : (
+              <Input
+                name="input"
+                type={content?.type || 'text'}
+                placeholder={content?.placeholder || 'Digite sua resposta...'}
+                required={content?.required}
+                className="text-center text-lg py-3"
+                style={{
+                  borderRadius: quiz.theme?.borderRadius || '8px',
+                  borderColor: quiz.theme?.primary || '#E5E7EB'
+                }}
+              />
+            )}
+            
+            <Button 
+              type="submit" 
+              className="w-full" 
+              size="lg"
+              style={{
+                borderRadius: quiz.theme?.buttonStyle === 'pill' ? '999px' : quiz.theme?.borderRadius || '12px',
+                background: quiz.theme?.gradient 
+                  ? `linear-gradient(135deg, ${quiz.theme?.primary}, ${quiz.theme?.accent})`
+                  : quiz.theme?.primary || '#2563EB',
+                color: quiz.theme?.cardBackground || '#FFFFFF'
+              }}
+            >
+              Continuar <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          </form>
+        );
+        
+      case 'lead_capture':
+        return (
+          <LeadCaptureForm
+            question={{
+              id: component.id,
+              idx: 0,
+              type: 'lead_capture',
+              title: properties?.introText || 'Preencha seus dados',
+              settings: properties
+            } as any}
+            sessionId={sessionId || ''}
+            quizId={quiz?.id || ''}
+            onCapture={(leadId) => {
+              setLeadCaptured(true);
+              // Move to next question after successful capture
+              setTimeout(() => {
+                if (currentStep < (quiz?.steps?.length || 0) - 1) {
+                  setCurrentStep(currentStep + 1);
+                } else {
+                  handleAnswer('lead_captured');
+                }
+              }, 1000);
+            }}
+            theme={quiz?.theme}
+          />
+        );
+        
+      default:
+        return (
+          <div className="text-center text-muted-foreground mb-4">
+            Componente {type} não suportado
+          </div>
+        );
+    }
+  };
+
   // Collect UTM parameters and initialize tracking
-  const utmParams = Object.fromEntries(searchParams.entries());
+  const utmParams = useMemo(() => Object.fromEntries(searchParams.entries()), [searchParams]);
   
   // Extract and persist UTM parameters
   useEffect(() => {
@@ -88,53 +369,227 @@ const QuizRunner = () => {
 
   useEffect(() => {
     const loadQuiz = async () => {
-      if (!publicId) return;
+      console.log('[QuizRunner] Starting loadQuiz, identifier:', quizIdentifier);
+      
+      if (!quizIdentifier) {
+        console.log('[QuizRunner] No identifier provided');
+        setError("ID do quiz não fornecido");
+        setLoading(false);
+        return;
+      }
       
       try {
-        const loadedQuiz = await loadQuizByPublicId(publicId);
-        setQuiz(loadedQuiz);
-
-        if (loadedQuiz) {
-          // Initialize pixel system with quiz settings
-          const pixelSettings = loadedQuiz.pixelSettings || {};
-          const allUTMs = { ...utmParams, ...realPixelSystem.getPersistedUTMParameters() };
-          realPixelSystem.initialize(pixelSettings as any, allUTMs);
-          
-          // Initialize analytics session
-          const newSessionId = realAnalytics.initializeSession(loadedQuiz, allUTMs);
-          setSessionId(newSessionId);
-          
-          // Track quiz view
-          realPixelSystem.trackQuizView(loadedQuiz);
-          
-          // Track quiz start
-          realPixelSystem.trackQuizStart(loadedQuiz);
-          
-          // Trigger webhook for quiz start
-          webhookSystem.triggerWebhooks('quiz_start', loadedQuiz, { sessionId: newSessionId });
-        }
+        console.log('[QuizRunner] 🔍 Starting loadQuiz');
+        console.log('[QuizRunner] 📌 Identifier:', quizIdentifier);
+        console.log('[QuizRunner] 📱 Is Mobile:', isMobile);
         
-        // Initialize step start time when quiz loads
-        setStepStartTime(Date.now());
-        
-        // For mobile, show splash screen before marking as ready
-        if (isMobile) {
-          setTimeout(() => setDataReady(true), 100);
-        } else {
+        // In development mode, use mock data if the identifier is 'mock'
+        if (process.env.NODE_ENV === 'development' && quizIdentifier === 'mock') {
+          console.log('[QuizRunner] ✅ Using mock data');
+          setQuiz(mockQuizData);
+          setLoading(false);
           setDataReady(true);
+          return;
         }
+        
+        // Try to load from Supabase using either quizId or publicId
+        let quizData: any = null;
+        let quizError: any = null;
+        
+        // First try as UUID (quizId)
+        const isUUID = quizIdentifier && quizIdentifier.length === 36 && quizIdentifier.includes('-');
+        
+        console.log('[QuizRunner] 🔑 Is UUID?', isUUID);
+        
+        if (isUUID) {
+          console.log('[QuizRunner] 🔍 Querying by ID...');
+          const result = await supabase
+            .from('quizzes')
+            .select('*')
+            .eq('id', quizIdentifier)
+            .eq('status', 'published')
+            .maybeSingle();
+          quizData = result.data;
+          quizError = result.error;
+          console.log('[QuizRunner] 📊 UUID Query result:', { hasData: !!quizData, error: quizError?.message });
+        }
+        
+        // If not found, try as publicId
+        if (!quizData) {
+          console.log('[QuizRunner] 🔍 Querying by publicId...');
+          const result = await supabase
+            .from('quizzes')
+            .select('*')
+            .eq('public_id', quizIdentifier)
+            .eq('status', 'published')
+            .maybeSingle();
+          quizData = result.data;
+          quizError = result.error;
+          console.log('[QuizRunner] 📊 PublicId Query result:', { hasData: !!quizData, error: quizError?.message });
+        }
+
+        if (!quizError && quizData) {
+          console.log('[QuizRunner] ✅ Quiz found in Supabase!', quizData.name);
+          
+          // Load steps data
+          const { data: stepsData, error: stepsError } = await supabase
+            .from('quiz_steps')
+            .select('*')
+            .eq('quiz_id', (quizData as any).id)
+            .order('order', { ascending: true });
+
+          // Transform Supabase data to Quiz format
+          const loadedQuiz: Quiz = {
+            id: (quizData as any).id,
+            publicId: (quizData as any).public_id,
+            name: (quizData as any).name,
+            description: (quizData as any).description,
+            status: (quizData as any).status as 'draft' | 'published' | 'archived',
+            theme: (quizData as any).theme as unknown as Quiz['theme'],
+            settings: (quizData as any).settings as unknown as Quiz['settings'],
+            questions: (quizData as any).questions as unknown as Quiz['questions'],
+            outcomes: (quizData as any).outcomes as unknown as Quiz['outcomes'],
+            pixelSettings: (quizData as any).pixel_settings as unknown as Quiz['pixelSettings'],
+            // Add steps if they exist
+            steps: stepsData && !stepsError 
+              ? stepsData.map((step: any) => ({
+                  id: step.id,
+                  type: step.type as 'question' | 'result' | 'custom_lead' || 'lead_registration',
+                  name: step.name,
+                  title: step.title || '',
+                  components: step['components'] || [], // Load components from the components column
+                  data: step.data as unknown as any
+                }))
+              : undefined,
+            createdAt: quizData.created_at,
+            updatedAt: quizData.updated_at
+          };
+          
+          setQuiz(loadedQuiz);
+
+          if (loadedQuiz) {
+            // Initialize pixel system with quiz settings
+            const pixelSettings = loadedQuiz.pixelSettings || {};
+            const allUTMs = { ...utmParams, ...realPixelSystem.getPersistedUTMParameters() };
+            realPixelSystem.initialize(pixelSettings as any, allUTMs);
+            
+            // Set user ID for analytics (if available)
+            // For public quizzes, we might not have a user ID, but we can use session ID
+            realAnalytics.setUserId(null); // Will be set to null for public quizzes
+            
+            // Initialize analytics session
+            const newSessionId = realAnalytics.initializeSession(loadedQuiz, allUTMs);
+            setSessionId(newSessionId);
+            
+            // Check if lead has already been captured for this session
+            try {
+              const { data: sessionData, error } = await supabase
+                .from('analytics_sessions')
+                .select('lead_captured')
+                .eq('session_id', newSessionId)
+                .single();
+              
+              if (!error && sessionData?.lead_captured) {
+                setLeadCaptured(true);
+              }
+            } catch (error) {
+              console.warn('Error checking lead capture status:', error);
+            }
+            
+            // Track quiz view
+            realPixelSystem.trackQuizView(loadedQuiz);
+            
+            // Track quiz start
+            realPixelSystem.trackQuizStart(loadedQuiz);
+            
+            // Trigger webhook for quiz start
+            webhookSystem.triggerWebhooks('quiz_start', loadedQuiz, { sessionId: newSessionId });
+          }
+          
+          // Initialize step start time when quiz loads
+          setStepStartTime(Date.now());
+          
+          // For mobile, show splash screen before marking as ready
+          if (isMobile) {
+            setTimeout(() => setDataReady(true), 100);
+          } else {
+            setDataReady(true);
+          }
+          setLoading(false);
+          return;
+        }
+
+        // Fallback to local storage
+        const loadedQuiz = await loadQuizByPublicId(quizIdentifier);
+        if (loadedQuiz) {
+          console.log("Quiz carregado do localStorage:", quizIdentifier, loadedQuiz);
+          setQuiz(loadedQuiz);
+          
+          if (loadedQuiz) {
+            // Initialize pixel system with quiz settings
+            const pixelSettings = loadedQuiz.pixelSettings || {};
+            const allUTMs = { ...utmParams, ...realPixelSystem.getPersistedUTMParameters() };
+            realPixelSystem.initialize(pixelSettings as any, allUTMs);
+            
+            // Set user ID for analytics (if available)
+            // For public quizzes, we might not have a user ID, but we can use session ID
+            realAnalytics.setUserId(null); // Will be set to null for public quizzes
+            
+            // Initialize analytics session
+            const newSessionId = realAnalytics.initializeSession(loadedQuiz, allUTMs);
+            setSessionId(newSessionId);
+            
+            // Check if lead has already been captured for this session
+            try {
+              const { data: sessionData, error } = await supabase
+                .from('analytics_sessions')
+                .select('lead_captured')
+                .eq('session_id', newSessionId)
+                .single();
+              
+              if (!error && sessionData?.lead_captured) {
+                setLeadCaptured(true);
+              }
+            } catch (error) {
+              console.warn('Error checking lead capture status:', error);
+            }
+            
+            // Track quiz view
+            realPixelSystem.trackQuizView(loadedQuiz);
+            
+            // Track quiz start
+            realPixelSystem.trackQuizStart(loadedQuiz);
+            
+            // Trigger webhook for quiz start
+            webhookSystem.triggerWebhooks('quiz_start', loadedQuiz, { sessionId: newSessionId });
+          }
+          
+          // Initialize step start time when quiz loads
+          setStepStartTime(Date.now());
+          
+          // For mobile, show splash screen before marking as ready
+          if (isMobile) {
+            setTimeout(() => setDataReady(true), 100);
+          } else {
+            setDataReady(true);
+          }
+          setLoading(false);
+          return;
+        }
+
+        // If we get here, the quiz wasn't found
+        setError("Quiz não encontrado. Verifique se ele foi publicado corretamente.");
+        console.log("Quiz não encontrado:", quizIdentifier);
       } catch (error) {
         console.error('Error loading quiz:', error);
-        setDataReady(true);
+        setError("Erro ao carregar o quiz. Tente novamente mais tarde.");
       } finally {
-        if (!isMobile) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
     loadQuiz();
-  }, [publicId]);
+  }, [quizIdentifier, isMobile]);
 
   // Mobile splash screen completion
   const handleSplashComplete = () => {
@@ -153,36 +608,67 @@ const QuizRunner = () => {
     );
   }
 
-  if (loading || !dataReady) {
+  if (loading) {
     return (
-      <MobileLoadingSpinner 
-        message="Carregando quiz..." 
-        fullScreen={true}
-      />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-lg font-medium">Carregando quiz...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-md p-6">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Oops!</h2>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <Button onClick={() => navigate('/app')} variant="default">
+            Voltar para o Dashboard
+          </Button>
+        </div>
+      </div>
     );
   }
 
   if (!quiz) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white">
-        <Card className="p-8 text-center max-w-md">
-          <h1 className="text-2xl font-bold mb-4">Quiz não encontrado</h1>
-          <p className="text-muted-foreground mb-6">
-            O quiz que você está procurando não existe ou foi removido.
-          </p>
-          <Button onClick={() => navigate('/')}>
-            Voltar ao início
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center max-w-md p-6">
+          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Quiz Não Publicado</h2>
+          <p className="text-muted-foreground mb-6">Este quiz ainda não foi publicado. Publique para visualizar.</p>
+          <Button onClick={() => navigate('/app')} variant="default">
+            Voltar para o Dashboard
           </Button>
-        </Card>
+        </div>
       </div>
     );
   }
 
-  const currentQuestion = quiz?.questions?.[currentStep];
-  const progress = quiz?.questions?.length ? (answeredStepsCount / quiz.questions.length) * 100 : 0;
+  // Handle both steps and questions
+  const currentStepData = quiz?.steps?.[currentStep];
+  const currentQuestion = currentStepData 
+    ? null // If we have steps, don't use questions
+    : quiz?.questions?.[currentStep];
+  
+  // Calculate progress based on what we're using
+  const totalItems = quiz?.steps?.length || quiz?.questions?.length || 0;
+  const progress = totalItems ? (answeredStepsCount / totalItems) * 100 : 0;
 
   const handleAnswer = async (value: any) => {
-    if (!currentQuestion || !quiz) return;
+    if ((!currentQuestion && !currentStepData) || !quiz) return;
     
     // Calculate time spent on this step
     const answerTime = Date.now() - stepStartTime;
@@ -201,11 +687,12 @@ const QuizRunner = () => {
     
     const newAnswers = [
       ...answers,
-      { questionId: currentQuestion.id, value }
+      { questionId: currentQuestion?.id || currentStepData?.id || `step-${currentStep}`, value }
     ];
     setAnswers(newAnswers);
 
-    if (currentStep < (quiz?.questions?.length || 0) - 1) {
+    const totalItems = quiz?.steps?.length || quiz?.questions?.length || 0;
+    if (currentStep < totalItems - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       // Quiz completed, save result
@@ -305,6 +792,13 @@ const QuizRunner = () => {
           realPixelSystem.trackSpecificResult(quiz, result, result.outcomeKey);
         }
         
+        // Handle redirect if enabled
+        if (quiz.redirectSettings?.enabled && quiz.redirectSettings?.url) {
+          // Open the redirect URL in a new tab
+          window.open(quiz.redirectSettings.url, '_blank');
+          return; // Don't navigate to result page
+        }
+        
         // Redirect to result page
         navigate(`/r/${resultId}`);
       } catch (error) {
@@ -314,52 +808,100 @@ const QuizRunner = () => {
     }
   };
 
-  const checkAchievements = (score: number, answers: QuizAnswer[], answerTimes: number[]) => {
-    const totalTime = answerTimes.reduce((sum, time) => sum + time, 0);
-    const avgTimePerQuestion = totalTime / answerTimes.length;
-    
-    const newAchievements: any[] = [];
-    
-    // Perfect Score Achievement
-    if (score >= 100) {
-      newAchievements.push({
-        id: 'perfect_score',
-        title: '⭐ Pontuação Perfeita!',
-        description: 'Você acertou tudo!',
-        points: 500
-      });
+  const renderStep = () => {
+    // Check if we have a custom step (like custom_lead)
+    if (currentStepData) {
+      if (currentStepData.type === 'custom_lead' && currentStepData.data) {
+        return (
+          <CustomLeadForm
+            stepData={currentStepData.data}
+            sessionId={sessionId || ''}
+            quizId={quiz?.id || ''}
+            onSubmit={(leadData) => {
+              // Move to next step after successful capture
+              setTimeout(() => {
+                if (currentStep < (quiz?.steps?.length || 0) - 1) {
+                  setCurrentStep(currentStep + 1);
+                } else {
+                  handleAnswer('lead_captured');
+                }
+              }, 1000);
+            }}
+            theme={quiz?.theme}
+          />
+        );
+      }
+      
+      // Handle lead registration steps
+      if (currentStepData.type === 'lead_registration' && currentStepData.data) {
+        return (
+          <CustomLeadForm
+            stepData={currentStepData.data}
+            sessionId={sessionId || ''}
+            quizId={quiz?.id || ''}
+            onSubmit={(leadData) => {
+              // Move to next step after successful capture
+              setTimeout(() => {
+                if (currentStep < (quiz?.steps?.length || 0) - 1) {
+                  setCurrentStep(currentStep + 1);
+                } else {
+                  handleAnswer('lead_captured');
+                }
+              }, 1000);
+            }}
+            theme={quiz?.theme}
+          />
+        );
+      }
+      
+      // Handle steps with components
+      if (currentStepData.components && currentStepData.components.length > 0) {
+        return (
+          <div className="space-y-6">
+            {currentStepData.components.map((component) => renderComponent(component))}
+            <div className="pt-4 border-t">
+              <Button 
+                onClick={() => {
+                  if (currentStep < (quiz?.steps?.length || 0) - 1) {
+                    setCurrentStep(currentStep + 1);
+                  } else {
+                    handleAnswer('completed');
+                  }
+                }}
+                className="w-full"
+                style={{
+                  borderRadius: quiz.theme?.buttonStyle === 'pill' ? '999px' : quiz.theme?.borderRadius || '12px',
+                  background: quiz.theme?.gradient 
+                    ? `linear-gradient(135deg, ${quiz.theme?.primary}, ${quiz.theme?.accent})`
+                    : quiz.theme?.primary || '#2563EB',
+                  color: quiz.theme?.cardBackground || '#FFFFFF'
+                }}
+              >
+                Continuar <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          </div>
+        );
+      }
+      
+      // For other step types without components
+      return (
+        <div className="text-center">
+          <p className="text-muted-foreground">Etapa não suportada ainda.</p>
+          <Button onClick={() => {
+            if (currentStep < (quiz?.steps?.length || 0) - 1) {
+              setCurrentStep(currentStep + 1);
+            } else {
+              handleAnswer('skipped');
+            }
+          }} className="mt-4">
+            Continuar
+          </Button>
+        </div>
+      );
     }
     
-    // Speed Achievement
-    if (totalTime < 60000) { // Less than 1 minute
-      newAchievements.push({
-        id: 'speed_demon',
-        title: '⚡ Demônio da Velocidade!',
-        description: 'Completou em menos de 1 minuto!',
-        points: 250
-      });
-    }
-    
-    // First Quiz Achievement
-    const existingResults = JSON.parse(localStorage.getItem('quiz_results') || '[]');
-    if (existingResults.length === 0) {
-      newAchievements.push({
-        id: 'first_quiz',
-        title: '🎯 Primeiro Quiz!',
-        description: 'Parabéns por completar seu primeiro quiz!',
-        points: 100
-      });
-    }
-    
-    if (newAchievements.length > 0) {
-      setAchievements(newAchievements);
-      // Show first achievement as popup
-      setShowAchievement(newAchievements[0]);
-      setTimeout(() => setShowAchievement(null), 3000);
-    }
-  };
-
-  const renderQuestion = () => {
+    // Fall back to question rendering if no step data
     if (!currentQuestion) return null;
 
     switch (currentQuestion.type) {
@@ -613,6 +1155,45 @@ const QuizRunner = () => {
           </form>
         );
 
+      case 'lead_capture':
+        // Skip lead capture if already captured
+        if (leadCaptured) {
+          // Move to next question
+          setTimeout(() => {
+            if (currentStep < (quiz?.questions?.length || 0) - 1) {
+              setCurrentStep(currentStep + 1);
+            } else {
+              handleAnswer('lead_captured');
+            }
+          }, 100);
+          return (
+            <div className="text-center py-8">
+              <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Carregando...</p>
+            </div>
+          );
+        }
+
+        return (
+          <LeadCaptureForm
+            question={currentQuestion as any}
+            sessionId={sessionId || ''}
+            quizId={quiz?.id || ''}
+            onCapture={(leadId) => {
+              setLeadCaptured(true);
+              // Move to next question after successful capture
+              setTimeout(() => {
+                if (currentStep < (quiz?.questions?.length || 0) - 1) {
+                  setCurrentStep(currentStep + 1);
+                } else {
+                  handleAnswer('lead_captured');
+                }
+              }, 1000);
+            }}
+            theme={quiz?.theme}
+          />
+        );
+
       default:
         return (
           <div className="text-center">
@@ -740,24 +1321,47 @@ const QuizRunner = () => {
               borderRadius: quiz.theme?.borderRadius || '12px'
             }}
           >
-            <div className={`mb-8 ${quiz.theme?.centerAlign ? 'text-center' : ''}`}>
-              <h1 
-                className="text-2xl md:text-3xl font-bold mb-4"
-                 style={{ color: quiz.theme?.text || '#0B0B0B' }}
-               >
-                 {currentQuestion?.title || 'Carregando pergunta...'}
-               </h1>
-               {currentQuestion?.description && (
-                <p 
-                  className="text-lg opacity-70"
-                  style={{ color: quiz.theme?.text || '#6B7280' }}
+            {/* Display quiz title and description prominently for introduction step */}
+            {currentStep === 0 && quiz && (
+              <div className={`mb-8 ${quiz.theme?.centerAlign ? 'text-center' : ''}`}>
+                <h1 
+                  className="text-3xl md:text-4xl font-bold mb-4"
+                  style={{ color: quiz.theme?.text || '#0B0B0B' }}
                 >
-                  {currentQuestion.description}
-                </p>
-              )}
-            </div>
+                  {quiz.name || 'Bem-vindo ao Quiz'}
+                </h1>
+                {quiz.description && (
+                  <p 
+                    className="text-xl opacity-90 mb-6"
+                    style={{ color: quiz.theme?.text || '#6B7280' }}
+                  >
+                    {quiz.description}
+                  </p>
+                )}
+              </div>
+            )}
+            
+            {/* Display question title and description for other steps */}
+            {currentStep > 0 && currentQuestion && (
+              <div className={`mb-8 ${quiz.theme?.centerAlign ? 'text-center' : ''}`}>
+                <h1 
+                  className="text-2xl md:text-3xl font-bold mb-4"
+                  style={{ color: quiz.theme?.text || '#0B0B0B' }}
+                >
+                  {currentQuestion?.title || 'Carregando pergunta...'}
+                </h1>
+                {currentQuestion?.description && (
+                  <p 
+                    className="text-lg opacity-70"
+                    style={{ color: quiz.theme?.text || '#6B7280' }}
+                  >
+                    {currentQuestion.description}
+                  </p>
+                )}
+              </div>
+            )}
 
-            {renderQuestion()}
+            {renderStep()}
           </Card>
         </div>
       </div>

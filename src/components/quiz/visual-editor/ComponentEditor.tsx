@@ -612,6 +612,102 @@ function renderContentEditor(component: Component, updateContent: (updates: any)
         </Card>
       );
 
+    case 'lead_capture':
+      const properties = component.properties || {};
+      const fields = properties.fields || { name: true, email: true, phone: false };
+
+      return (
+        <Card className="p-4 space-y-4">
+          <div>
+            <Label htmlFor="lead-intro-text">Texto de Introdução</Label>
+            <Textarea
+              id="lead-intro-text"
+              value={properties.introText || ''}
+              onChange={(e) => onUpdate({ properties: { ...properties, introText: e.target.value } })}
+              placeholder="Quer receber seu resultado?"
+              rows={3}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="lead-success-message">Mensagem de Sucesso</Label>
+            <Textarea
+              id="lead-success-message"
+              value={properties.successMessage || ''}
+              onChange={(e) => onUpdate({ properties: { ...properties, successMessage: e.target.value } })}
+              placeholder="Dados salvos com sucesso!"
+              rows={2}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="lead-error-message">Mensagem de Erro</Label>
+            <Textarea
+              id="lead-error-message"
+              value={properties.errorMessage || ''}
+              onChange={(e) => onUpdate({ properties: { ...properties, errorMessage: e.target.value } })}
+              placeholder="Ocorreu um erro ao salvar seus dados. Por favor, tente novamente."
+              rows={2}
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="lead-button-text">Texto do Botão</Label>
+            <Input
+              id="lead-button-text"
+              value={properties.buttonText || ''}
+              onChange={(e) => onUpdate({ properties: { ...properties, buttonText: e.target.value } })}
+              placeholder="Enviar"
+            />
+          </div>
+
+          <div>
+            <Label>Campos Visíveis</Label>
+            <div className="space-y-2 mt-2">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="field-name"
+                  checked={fields.name}
+                  onCheckedChange={(checked) => onUpdate({ 
+                    properties: { 
+                      ...properties, 
+                      fields: { ...fields, name: checked } 
+                    } 
+                  })}
+                />
+                <Label htmlFor="field-name">Nome</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="field-email"
+                  checked={fields.email}
+                  onCheckedChange={(checked) => onUpdate({ 
+                    properties: { 
+                      ...properties, 
+                      fields: { ...fields, email: checked } 
+                    } 
+                  })}
+                />
+                <Label htmlFor="field-email">E-mail</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="field-phone"
+                  checked={fields.phone}
+                  onCheckedChange={(checked) => onUpdate({ 
+                    properties: { 
+                      ...properties, 
+                      fields: { ...fields, phone: checked } 
+                    } 
+                  })}
+                />
+                <Label htmlFor="field-phone">Telefone</Label>
+              </div>
+            </div>
+          </div>
+        </Card>
+      );
+
     default:
       return (
         <Card className="p-4">
@@ -782,7 +878,8 @@ function getComponentDisplayName(type: string): string {
     spacer: 'Espaçador',
     terms: 'Termos',
     multiple_choice: 'Múltipla Escolha',
-    level_slider: 'Slider de Nível'
+    level_slider: 'Slider de Nível',
+    lead_capture: 'Coleta de Lead'
   };
   
   return names[type] || type;

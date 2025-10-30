@@ -1,0 +1,28 @@
+🔗 LINKS DIRETOS PARA O SUPABASE
+=====================================
+
+SQL Editor (cole o script aqui):
+https://supabase.com/dashboard/project/rijvidluwvzvatoarqoe/sql/new
+
+Dashboard Principal:
+https://supabase.com/dashboard/project/rijvidluwvzvatoarqoe
+
+Table Editor:
+https://supabase.com/dashboard/project/rijvidluwvzvatoarqoe/editor
+
+=====================================
+
+📋 PASSO A PASSO SUPER RÁPIDO:
+
+1. Clique no link "SQL Editor" acima (Ctrl+Click)
+2. Abra o arquivo: supabase/FIX_QUIZ_STEPS_TABLE.sql
+3. Copie TODO o conteúdo (Ctrl+A, Ctrl+C)
+4. Cole no SQL Editor (Ctrl+V)
+5. Clique no botão verde "RUN"
+6. Pronto! ✅
+
+=====================================
+
+⏱️ Tempo total: 2 minutos
+🎯 Dificuldade: Muito fácil
+💪 Você consegue!

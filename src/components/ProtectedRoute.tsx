@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -9,10 +9,21 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, session, loading } = useAuth();
   const navigate = useNavigate();
+  
+  // Debug log
+  console.log('ProtectedRoute:', { 
+    loading, 
+    hasUser: !!user, 
+    hasSession: !!session,
+    userId: user?.id 
+  });
 
   useEffect(() => {
     if (!loading && (!user || !session)) {
+      console.log('⚠️ ProtectedRoute: Redirecionando para /auth');
       navigate('/auth');
+    } else if (!loading && user && session) {
+      console.log('✅ ProtectedRoute: Usuário autenticado, permitindo acesso');
     }
   }, [user, session, loading, navigate]);
 

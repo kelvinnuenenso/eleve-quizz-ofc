@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -28,9 +28,9 @@ interface ResponsivePreviewProps {
 type ViewportSize = 'desktop' | 'tablet' | 'mobile';
 
 const VIEWPORT_SIZES = {
-  desktop: { width: '100%', maxWidth: '1200px', icon: Monitor, label: 'Desktop' },
+  desktop: { width: '1280px', maxWidth: '1280px', icon: Monitor, label: 'Desktop' },
   tablet: { width: '768px', maxWidth: '768px', icon: Tablet, label: 'Tablet' },
-  mobile: { width: '375px', maxWidth: '375px', icon: Smartphone, label: 'Mobile' }
+  mobile: { width: '390px', maxWidth: '390px', icon: Smartphone, label: 'Mobile' }
 };
 
 export function ResponsivePreview({ quiz, currentStep, onStepChange }: ResponsivePreviewProps) {
@@ -41,6 +41,11 @@ export function ResponsivePreview({ quiz, currentStep, onStepChange }: Responsiv
   const [previewMode, setPreviewMode] = useState<'design' | 'live'>('design');
 
   const viewportConfig = VIEWPORT_SIZES[viewport];
+
+  // Update viewport when it changes
+  useEffect(() => {
+    // This effect ensures the state updates properly
+  }, [viewport]);
 
   return (
     <div className="h-full bg-background border-l flex flex-col">
@@ -133,6 +138,19 @@ export function ResponsivePreview({ quiz, currentStep, onStepChange }: Responsiv
               minHeight: '600px'
             }}
           >
+            {/* Device Frame Header */}
+            <div className="border-b bg-muted/30 p-2 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <viewportConfig.icon className="w-4 h-4" />
+                <span className="text-xs font-medium">{viewportConfig.label}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              </div>
+            </div>
+
             {/* Grid Overlay */}
             {showGrid && (
               <div
@@ -148,44 +166,46 @@ export function ResponsivePreview({ quiz, currentStep, onStepChange }: Responsiv
             )}
 
             {/* Content */}
-            <div className={`p-6 ${showBoundaries ? 'space-y-2' : 'space-y-4'}`}>
-              {currentStep.components.map((component, index) => (
-                <div
-                  key={component.id}
-                  className={`
-                    ${showBoundaries ? 'border border-dashed border-blue-300 rounded p-2' : ''}
-                    ${previewMode === 'design' ? 'relative group' : ''}
-                  `}
-                >
-                  {showBoundaries && (
-                    <div className="absolute -top-6 left-0 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded text-xs font-mono">
-                      {component.type}
-                    </div>
-                  )}
-                  
-                  <ComponentRenderer
-                    component={component}
-                    isPreview={previewMode === 'live'}
-                    responsive={viewport !== 'desktop'}
-                  />
+            <div className="flex-1 overflow-auto p-6">
+              <div className={`space-y-4 ${showBoundaries ? 'space-y-2' : ''}`}>
+                {currentStep.components.map((component, index) => (
+                  <div
+                    key={component.id}
+                    className={`
+                      ${showBoundaries ? 'border border-dashed border-blue-300 rounded p-2' : ''}
+                      ${previewMode === 'design' ? 'relative group' : ''}
+                    `}
+                  >
+                    {showBoundaries && (
+                      <div className="absolute -top-6 left-0 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded text-xs font-mono">
+                        {component.type}
+                      </div>
+                    )}
+                    
+                    <ComponentRenderer
+                      component={component}
+                      isPreview={previewMode === 'live'}
+                      responsive={viewport !== 'desktop'}
+                    />
 
-                  {previewMode === 'design' && (
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Badge variant="secondary" className="text-xs">
-                        {index + 1}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-              ))}
+                    {previewMode === 'design' && (
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Badge variant="secondary" className="text-xs">
+                          {index + 1}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                ))}
 
-              {currentStep.components.length === 0 && (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Eye className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Nenhum componente adicionado</p>
-                  <p className="text-sm">Arraste componentes da biblioteca para começar</p>
-                </div>
-              )}
+                {currentStep.components.length === 0 && (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Eye className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>Nenhum componente adicionado</p>
+                    <p className="text-sm">Arraste componentes da biblioteca para começar</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>

@@ -60,6 +60,28 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Supabase Database Setup
+
+To set up your own Supabase database:
+
+1. Create a Supabase account at [https://supabase.com](https://supabase.com)
+2. Create a new project
+3. Update the `.env` file with your project credentials:
+   ```
+   VITE_SUPABASE_URL="https://YOUR_PROJECT.supabase.co"
+   VITE_SUPABASE_ANON_KEY="YOUR_ANON_KEY"
+   SUPABASE_SERVICE_ROLE_KEY="YOUR_SERVICE_ROLE_KEY"
+   ```
+4. Run the database migrations:
+   ```bash
+   npx supabase link --project-ref YOUR_PROJECT_ID
+   npx supabase db push
+   ```
+   
+   Or manually run the SQL scripts from `supabase/migrations/` in your Supabase SQL Editor.
+
+5. Test the connection by visiting http://localhost:8081/app/supabase-test after starting the development server
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/de84e2b7-8d48-4fb5-9d73-e60745359abf) and click on Share -> Publish.
